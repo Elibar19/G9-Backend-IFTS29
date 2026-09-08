@@ -1,0 +1,24 @@
+{
+  "name": "agrotec-backend",
+  "version": "1.0.0",
+  "description": "API REST AgroTec — Monitoreo de lotes agricolas. Primera entrega.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "agrotec",
+    "express",
+    "mvc",
+    "json"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "pug": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
