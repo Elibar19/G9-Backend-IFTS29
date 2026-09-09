@@ -1,0 +1,188 @@
+# Para ejecutar estas requests instalar la extensión "REST Client" de VS Code
+
+
+@host = http://localhost:3000
+
+### Salud del servicio: verifica que la API está en funcionamiento
+GET {{host}}/api/health
+
+### Productores: listar todos
+GET {{host}}/api/productores
+
+### Productores: obtener uno por id
+GET {{host}}/api/productores/prod-001
+
+### Productores: lotes del productor
+GET {{host}}/api/productores/prod-001/lotes
+
+### Productores: crear uno nuevo
+POST {{host}}/api/productores
+Content-Type: application/json
+
+{
+  "nombre": "Productor de Prueba",
+  "cuit": "20-12345678-9",
+  "email": "prueba@agrotec.com",
+  "telefono": "1122334455",
+  "localidad": "Pergamino"
+}
+
+### Productores: actualizar (usar un id creado arriba o prod-003)
+PUT {{host}}/api/productores/prod-003
+Content-Type: application/json
+
+{
+  "nombre": "Productor Actualizado",
+  "cuit": "20-87654321-9",
+  "email": "actualizado@agrotec.com",
+  "telefono": "1155667788",
+  "localidad": "Junín"
+}
+
+### Productores: eliminar
+DELETE {{host}}/api/productores/prod-003
+
+### Lotes: listar todos
+GET {{host}}/api/lotes
+
+### Lotes: filtrar por nivel de alerta (Normal | Atención | Crítico)
+GET {{host}}/api/lotes?alerta=Crítico
+
+### Lotes: filtrar por productor
+GET {{host}}/api/lotes?productorId=prod-001
+
+### Lotes: obtener uno por id
+GET {{host}}/api/lotes/lote-001
+
+### Lotes: historial de observaciones del lote
+GET {{host}}/api/lotes/lote-001/observaciones
+
+### Lotes: crear uno nuevo
+POST {{host}}/api/lotes
+Content-Type: application/json
+
+{
+  "nombre": "Lote de Prueba",
+  "hectareas": 25,
+  "productorId": "prod-001",
+  "ubicacion": "Ruta 9 km 5"
+}
+
+### Lotes: actualizar
+PUT {{host}}/api/lotes/lote-004
+Content-Type: application/json
+
+{
+  "nombre": "Lote Actualizado",
+  "hectareas": 40,
+  "productorId": "prod-002",
+  "ubicacion": "Camino Real km 3"
+}
+
+### Lotes: eliminar
+DELETE {{host}}/api/lotes/lote-004
+
+### Observaciones: listar todas
+GET {{host}}/api/observaciones
+
+### Observaciones: filtrar por nivel de alerta
+GET {{host}}/api/observaciones?alerta=Atención
+
+### Observaciones: filtrar por lote
+GET {{host}}/api/observaciones?loteId=lote-001
+
+### Observaciones: filtrar por técnico
+GET {{host}}/api/observaciones?tecnicoId=tec-001
+
+### Observaciones: obtener una por id
+GET {{host}}/api/observaciones/obs-001
+
+### Observaciones: crear una nueva
+POST {{host}}/api/observaciones
+Content-Type: application/json
+
+{
+  "loteId": "lote-001",
+  "tecnicoId": "tec-001",
+  "fecha": "2026-09-01",
+  "tipoCultivoId": "cult-001",
+  "estadoCultivo": "Bueno",
+  "observaciones": "Observación de prueba",
+  "nivelAlerta": "Normal"
+}
+
+### Observaciones: crear sin fecha (debe responder 400, validación)
+POST {{host}}/api/observaciones
+Content-Type: application/json
+
+{
+  "loteId": "lote-001",
+  "tecnicoId": "tec-001",
+  "tipoCultivoId": "cult-001",
+  "estadoCultivo": "Bueno",
+  "observaciones": "Sin fecha",
+  "nivelAlerta": "Normal"
+}
+
+### Observaciones: actualizar
+PUT {{host}}/api/observaciones/obs-005
+Content-Type: application/json
+
+{
+  "loteId": "lote-002",
+  "tecnicoId": "tec-002",
+  "fecha": "2026-09-02",
+  "tipoCultivoId": "cult-002",
+  "estadoCultivo": "Regular",
+  "observaciones": "Observación actualizada",
+  "nivelAlerta": "Atención"
+}
+
+### Observaciones: eliminar (regla de negocio: responde 403, no se borran)
+DELETE {{host}}/api/observaciones/obs-005
+
+### Técnicos: listar todos
+GET {{host}}/api/tecnicos
+
+### Técnicos: obtener uno por id
+GET {{host}}/api/tecnicos/tec-001
+
+### Técnicos: crear uno nuevo
+POST {{host}}/api/tecnicos
+Content-Type: application/json
+
+{
+  "nombre": "Técnico de Prueba",
+  "especialidad": "Suelos",
+  "email": "tecnico@agrotec.com",
+  "telefono": "1199887766"
+}
+
+### Tipos de cultivo: listar todos
+GET {{host}}/api/tipos-cultivo
+
+### Tipos de cultivo: obtener uno por id
+GET {{host}}/api/tipos-cultivo/cult-001
+
+### Tipos de cultivo: crear uno nuevo
+POST {{host}}/api/tipos-cultivo
+Content-Type: application/json
+
+{
+  "nombre": "Cebada"
+}
+
+### Vista: inicio (panel web)
+GET {{host}}/
+
+### Vista: listado de lotes
+GET {{host}}/lotes
+
+### Vista: detalle de lote con historial
+GET {{host}}/lotes/lote-001
+
+### Vista: listado de observaciones
+GET {{host}}/observaciones
+
+### Vista: formulario de nueva observación
+GET {{host}}/observaciones/nueva
