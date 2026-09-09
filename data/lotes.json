@@ -1,0 +1,30 @@
+[
+  {
+    "id": "lote-001",
+    "nombre": "Campo Norte",
+    "hectareas": 45,
+    "productorId": "prod-001",
+    "ubicacion": "Ruta 8 km 12"
+  },
+  {
+    "id": "lote-002",
+    "nombre": "Lote 12",
+    "hectareas": 80,
+    "productorId": "prod-001",
+    "ubicacion": "Camino a Achiras"
+  },
+  {
+    "id": "lote-003",
+    "nombre": "Potrero Bajo",
+    "hectareas": 30,
+    "productorId": "prod-002",
+    "ubicacion": "Parcela oeste"
+  },
+  {
+    "id": "lote-004",
+    "nombre": "Loma Alta",
+    "hectareas": 120,
+    "productorId": "prod-003",
+    "ubicacion": "Acceso norte"
+  }
+]

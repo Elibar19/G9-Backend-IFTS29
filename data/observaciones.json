@@ -1,0 +1,52 @@
+[
+  {
+    "id": "obs-001",
+    "loteId": "lote-001",
+    "tecnicoId": "tec-001",
+    "fecha": "2026-04-02",
+    "tipoCultivoId": "cult-001",
+    "estadoCultivo": "Bueno",
+    "observaciones": "Stand uniforme. Sin síntomas de enfermedad.",
+    "nivelAlerta": "Normal"
+  },
+  {
+    "id": "obs-002",
+    "loteId": "lote-001",
+    "tecnicoId": "tec-003",
+    "fecha": "2026-05-18",
+    "tipoCultivoId": "cult-001",
+    "estadoCultivo": "Regular",
+    "observaciones": "Presencia de oruga medidora en bordes. Se recomienda monitoreo semanal.",
+    "nivelAlerta": "Atención"
+  },
+  {
+    "id": "obs-003",
+    "loteId": "lote-002",
+    "tecnicoId": "tec-002",
+    "fecha": "2026-05-20",
+    "tipoCultivoId": "cult-002",
+    "estadoCultivo": "Malo",
+    "observaciones": "Estrés hídrico severo y clorosis. Requiere intervención inmediata.",
+    "nivelAlerta": "Crítico"
+  },
+  {
+    "id": "obs-004",
+    "loteId": "lote-003",
+    "tecnicoId": "tec-001",
+    "fecha": "2026-05-22",
+    "tipoCultivoId": "cult-003",
+    "estadoCultivo": "Bueno",
+    "observaciones": "Trigo en encañazón. Cobertura de suelo adecuada.",
+    "nivelAlerta": "Normal"
+  },
+  {
+    "id": "obs-005",
+    "loteId": "lote-004",
+    "tecnicoId": "tec-002",
+    "fecha": "2026-05-25",
+    "tipoCultivoId": "cult-004",
+    "estadoCultivo": "Regular",
+    "observaciones": "Deficiencia de nitrógeno en sectores bajos. Se sugiere análisis de suelo.",
+    "nivelAlerta": "Atención"
+  }
+]
