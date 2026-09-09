@@ -1,0 +1,196 @@
+:root {
+  --verde: #1f6b3a;
+  --verde-oscuro: #15492a;
+  --fondo: #f4f7f2;
+  --texto: #1c241d;
+  --muted: #5b675e;
+  --card: #ffffff;
+  --borde: #d7e0d4;
+  --atencion: #c47b16;
+  --critico: #b42318;
+  --normal: #1f6b3a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background: var(--verde-oscuro);
+}
+
+.topbar a {
+  color: #fff;
+  text-decoration: none;
+  margin-left: 1rem;
+}
+
+.marca {
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-left: 0 !important;
+}
+
+.contenedor {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.hero h1,
+h1 {
+  margin-bottom: 0.4rem;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.card .label,
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.card strong {
+  display: block;
+  font-size: 1.4rem;
+  margin-top: 0.35rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.btn {
+  display: inline-block;
+  background: var(--verde);
+  color: #fff;
+  text-decoration: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: #e7eee6;
+}
+
+.badge-Normal {
+  background: #d8f0df;
+  color: var(--normal);
+}
+
+.badge-Atención {
+  background: #fbe8c9;
+  color: var(--atencion);
+}
+
+.badge-Crítico {
+  background: #f8d4d0;
+  color: var(--critico);
+}
+
+.lista {
+  list-style: none;
+  padding: 0;
+}
+
+.lista li {
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.formulario {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 560px;
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.formulario label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.formulario input,
+.formulario select,
+.formulario textarea {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.empty,
+.error-box {
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  padding: 1rem;
+}

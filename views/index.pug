@@ -1,0 +1,51 @@
+extends layout
+
+block contenido
+  section.hero
+    h1 Monitoreo de lotes agrícolas
+    p AgroTec registra productores, lotes y observaciones de campo para consultar el historial de cada lote y su nivel de alerta.
+
+  section.stats
+    article.card
+      span.label Productores
+      strong= totals.productores
+    article.card
+      span.label Lotes
+      strong= totals.lotes
+    article.card
+      span.label Técnicos
+      strong= totals.tecnicos
+    article.card
+      span.label Observaciones
+      strong= totals.observaciones
+
+  section
+    h2 Lotes y alerta actual
+    table
+      thead
+        tr
+          th Lote
+          th Hectáreas
+          th Alerta actual
+          th
+      tbody
+        each lote in lotes
+          tr
+            td= lote.nombre
+            td= lote.hectareas
+            td
+              span(class=`badge badge-${lote.nivelAlertaActual}`)= lote.nivelAlertaActual
+            td
+              a.btn.btn-sm(href=`/lotes/${lote.id}`) Ver historial
+
+  section
+    h2 Últimas observaciones
+    if observaciones.length
+      ul.lista
+        each observacion in observaciones
+          li
+            strong= observacion.fecha
+            span= ` · ${observacion.nivelAlerta}`
+            p= observacion.observaciones
+    else
+      p.empty No hay observaciones registradas.

@@ -1,0 +1,20 @@
+doctype html
+html(lang="es")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title= title ? `${title} | AgroTec` : "AgroTec"
+    link(rel="stylesheet" href="/css/estilos.css")
+  body
+    header.topbar
+      a.marca(href="/") AgroTec
+      nav
+        a(href="/") Inicio
+        a(href="/lotes") Lotes
+        a(href="/observaciones") Observaciones
+        a(href="/observaciones/nueva") Nueva observación
+        a(href="/api/health") API
+    main.contenedor
+      block contenido
+    footer
+      p Primera entrega — Monitoreo de lotes · Persistencia JSON · MVC

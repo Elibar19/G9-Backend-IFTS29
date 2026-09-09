@@ -1,0 +1,25 @@
+extends ../layout
+
+block contenido
+  .encabezado
+    h1 Lotes
+    a.btn(href="/observaciones/nueva") Registrar observación
+
+  table
+    thead
+      tr
+        th Nombre
+        th Hectáreas
+        th Productor
+        th Alerta actual
+        th
+    tbody
+      each lote in lotes
+        tr
+          td= lote.nombre
+          td= lote.hectareas
+          td= lote.productorNombre
+          td
+            span(class=`badge badge-${lote.nivelAlertaActual}`)= lote.nivelAlertaActual
+          td
+            a.btn.btn-sm(href=`/lotes/${lote.id}`) Historial

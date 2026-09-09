@@ -1,0 +1,46 @@
+extends ../layout
+
+block contenido
+  .encabezado
+    div
+      p.muted Lote
+      h1= lote.nombre
+    a.btn(href=`/observaciones/nueva`)= "Nueva observación"
+
+  section.stats
+    article.card
+      span.label Hectáreas
+      strong= lote.hectareas
+    article.card
+      span.label Productor
+      strong= productor ? productor.nombre : "—"
+    article.card
+      span.label Alerta actual
+      strong(class=`badge badge-${nivelAlertaActual}`)= nivelAlertaActual
+    article.card
+      span.label Ubicación
+      strong= lote.ubicacion || "—"
+
+  h2 Historial de observaciones
+  if historial.length
+    table
+      thead
+        tr
+          th Fecha
+          th Técnico
+          th Cultivo
+          th Estado
+          th Alerta
+          th Observaciones
+      tbody
+        each item in historial
+          tr
+            td= item.fecha
+            td= item.tecnicoNombre
+            td= item.cultivoNombre
+            td= item.estadoCultivo
+            td
+              span(class=`badge badge-${item.nivelAlerta}`)= item.nivelAlerta
+            td= item.observaciones
+  else
+    p.empty Este lote todavía no tiene observaciones.
