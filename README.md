@@ -324,3 +324,4 @@ Las pruebas se realizaron con la extensión **REST Client** de VS Code sobre `re
 - Redacción de documentación del proyecto
 - Recopilar tests para probar funcionalidad de la API rest
 - Ayuda con la creacion de ObjectId en mongoose
+- Ayuda para crear src/script/seed.js para parsear los datos de los jsons creados en la primera entrega y agregarlos a la nueva db
