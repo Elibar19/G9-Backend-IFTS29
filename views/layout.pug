@@ -9,12 +9,20 @@ html(lang="es")
     header.topbar
       a.marca(href="/") AgroTec
       nav
-        a(href="/") Inicio
-        a(href="/lotes") Lotes
-        a(href="/observaciones") Observaciones
-        a(href="/observaciones/nueva") Nueva observación
-        a(href="/api/health") API
+        if currentUser
+          a(href="/") Inicio
+          a(href="/lotes") Lotes
+          a(href="/observaciones") Observaciones
+        if currentUser && currentUser.role === 'admin'
+          a(href="/observaciones/nueva") Nueva observación
+          a(href="/api/health") API
+        if currentUser
+          span.sesion= `${currentUser.nombre} · ${currentUser.role}`
+          form.form-logout(action="/logout" method="POST")
+            button.btn.btn-sm(type="submit") Salir
+        else
+          a(href="/login") Iniciar sesión
     main.contenedor
       block contenido
     footer
-      p Primera entrega — Monitoreo de lotes · Persistencia JSON · MVC
+      p Segunda entrega — Monitoreo de lotes · MongoDB y Login · MVC

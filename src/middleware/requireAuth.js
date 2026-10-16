@@ -1,4 +1,4 @@
-// Exige que el usuario este logueado para ver el panel (la API REST no se protege).
+// Exige que el usuario este logueado para ver el panel.
 export function requireLogin(req, res, next) {
   if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
@@ -26,7 +26,6 @@ export function requireRole(role) {
   };
 }
 
-// Pone el usuario logueado a disposicion de todas las vistas (layout.pug).
 export function attachUserView(req, res, next) {
   res.locals.currentUser = req.user || null;
   next();

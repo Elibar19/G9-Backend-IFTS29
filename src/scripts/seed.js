@@ -15,8 +15,6 @@ import Usuario from '../models/Usuario.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, '../../data');
 
-// Ids deterministas: siempre el mismo id viejo genera el mismo ObjectId,
-// así el seed se puede repetir y los enlaces de request/agrotec.rest siguen sirviendo.
 function newId(oldId) {
   const hex = crypto.createHash('md5').update(String(oldId)).digest('hex').slice(0, 24);
   return new mongoose.Types.ObjectId(hex);
