@@ -1,0 +1,14 @@
+extends layout
+
+block contenido
+  section.login-box
+    h1 Iniciar sesión
+    if message
+      p.login-error= message
+    form.formulario(action="/login" method="POST")
+      label Usuario
+        input(type="text" name="usuario" required autofocus)
+      label Contraseña
+        input(type="password" name="password" required)
+      button.btn(type="submit") Entrar
+    p.muted Accesos de prueba: admin (admin123) / lector (lector123)
