@@ -1,44 +1,46 @@
-const { ALERT_LEVELS, CROP_STATUSES } = require('../constants/alertas');
+import mongoose from 'mongoose';
+import { ALERT_LEVELS, CROP_STATUSES } from '../constants/alertas.js';
 
-class Observacion {
-  constructor(id, loteId, tecnicoId, fecha, tipoCultivoId, estadoCultivo, observaciones, nivelAlerta) {
-    this.id = id;
-    this.loteId = loteId;
-    this.tecnicoId = tecnicoId;
-    this.fecha = fecha;
-    this.tipoCultivoId = tipoCultivoId;
-    this.estadoCultivo = estadoCultivo;
-    this.observaciones = observaciones;
-    this.nivelAlerta = nivelAlerta;
+const observacionSchema = new mongoose.Schema(
+  {
+    loteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lote' },
+    tecnicoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tecnico' },
+    fecha: { type: String },
+    tipoCultivoId: { type: mongoose.Schema.Types.ObjectId, ref: 'TipoCultivo' },
+    estadoCultivo: { type: String },
+    observaciones: { type: String },
+    nivelAlerta: { type: String },
+  },
+  { versionKey: false }
+);
+
+
+export function validate(data) {
+  const errors = [];
+
+  if (!data.loteId) {
+    errors.push('La observación debe estar asociada a un lote (loteId)');
+  }
+  if (!data.tecnicoId) {
+    errors.push('El técnico es obligatorio (tecnicoId)');
+  }
+  if (!data.fecha || isNaN(new Date(data.fecha).getTime())) {
+    errors.push('No se puede registrar una observación sin una fecha válida');
+  }
+  if (!data.tipoCultivoId) {
+    errors.push('El tipo de cultivo es obligatorio (tipoCultivoId)');
+  }
+  if (!CROP_STATUSES.includes(data.estadoCultivo)) {
+    errors.push('El estado del cultivo debe ser: ' + CROP_STATUSES.join(', '));
+  }
+  if (!ALERT_LEVELS.includes(data.nivelAlerta)) {
+    errors.push('El nivel de alerta debe ser: ' + ALERT_LEVELS.join(', '));
+  }
+  if (!data.observaciones) {
+    errors.push('El texto de observaciones es obligatorio');
   }
 
-  validate() {
-    const errors = [];
-
-    if (!this.loteId) {
-      errors.push('La observación debe estar asociada a un lote (loteId)');
-    }
-    if (!this.tecnicoId) {
-      errors.push('El técnico es obligatorio (tecnicoId)');
-    }
-    if (!this.fecha || isNaN(new Date(this.fecha).getTime())) {
-      errors.push('No se puede registrar una observación sin una fecha válida');
-    }
-    if (!this.tipoCultivoId) {
-      errors.push('El tipo de cultivo es obligatorio (tipoCultivoId)');
-    }
-    if (!CROP_STATUSES.includes(this.estadoCultivo)) {
-      errors.push('El estado del cultivo debe ser: ' + CROP_STATUSES.join(', '));
-    }
-    if (!ALERT_LEVELS.includes(this.nivelAlerta)) {
-      errors.push('El nivel de alerta debe ser: ' + ALERT_LEVELS.join(', '));
-    }
-    if (!this.observaciones) {
-      errors.push('El texto de observaciones es obligatorio');
-    }
-
-    return errors;
-  }
+  return errors;
 }
 
-module.exports = Observacion;
+export default mongoose.model('Observacion', observacionSchema);

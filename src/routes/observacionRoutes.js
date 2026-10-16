@@ -1,12 +1,13 @@
-const express = require('express');
-const observacionController = require('../controllers/observacionController');
+import express from 'express';
+import * as observacionController from '../controllers/observacionController.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();
 
-router.get('/', observacionController.list);
-router.get('/:id', observacionController.getById);
-router.post('/', observacionController.create);
-router.put('/:id', observacionController.update);
-router.delete('/:id', observacionController.delete);
+router.get('/', asyncHandler(observacionController.list));
+router.get('/:id', asyncHandler(observacionController.getById));
+router.post('/', asyncHandler(observacionController.create));
+router.put('/:id', asyncHandler(observacionController.update));
+router.delete('/:id', asyncHandler(observacionController.delete));
 
-module.exports = router;
+export default router;

@@ -1,13 +1,14 @@
-const express = require('express');
-const loteController = require('../controllers/loteController');
+import express from 'express';
+import * as loteController from '../controllers/loteController.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();
 
-router.get('/', loteController.list);
-router.get('/:id', loteController.getById);
-router.get('/:id/observaciones', loteController.getHistory);
-router.post('/', loteController.create);
-router.put('/:id', loteController.update);
-router.delete('/:id', loteController.delete);
+router.get('/', asyncHandler(loteController.list));
+router.get('/:id', asyncHandler(loteController.getById));
+router.get('/:id/observaciones', asyncHandler(loteController.getHistory));
+router.post('/', asyncHandler(loteController.create));
+router.put('/:id', asyncHandler(loteController.update));
+router.delete('/:id', asyncHandler(loteController.delete));
 
-module.exports = router;
+export default router;

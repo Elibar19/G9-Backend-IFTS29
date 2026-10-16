@@ -1,24 +1,27 @@
-class Tecnico {
-  constructor(id, nombre, especialidad, email, telefono) {
-    this.id = id;
-    this.nombre = nombre;
-    this.especialidad = especialidad;
-    this.email = email;
-    this.telefono = telefono;
+import mongoose from 'mongoose';
+
+const tecnicoSchema = new mongoose.Schema(
+  {
+    nombre: { type: String },
+    especialidad: { type: String },
+    email: { type: String },
+    telefono: { type: String },
+  },
+  { versionKey: false }
+);
+
+
+export function validate(data) {
+  const errors = [];
+
+  if (!data.nombre) {
+    errors.push('El nombre del técnico es obligatorio');
+  }
+  if (!data.especialidad) {
+    errors.push('La especialidad es obligatoria');
   }
 
-  validate() {
-    const errors = [];
-
-    if (!this.nombre) {
-      errors.push('El nombre del técnico es obligatorio');
-    }
-    if (!this.especialidad) {
-      errors.push('La especialidad es obligatoria');
-    }
-
-    return errors;
-  }
+  return errors;
 }
 
-module.exports = Tecnico;
+export default mongoose.model('Tecnico', tecnicoSchema);
