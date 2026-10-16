@@ -1,10 +1,11 @@
-const express = require('express');
-const productorRoutes = require('./productorRoutes');
-const loteRoutes = require('./loteRoutes');
-const observacionRoutes = require('./observacionRoutes');
-const tecnicoRoutes = require('./tecnicoRoutes');
-const tipoCultivoRoutes = require('./tipoCultivoRoutes');
-const vistaRoutes = require('./vistaRoutes');
+import express from 'express';
+import authRoutes from './authRoutes.js';
+import productorRoutes from './productorRoutes.js';
+import loteRoutes from './loteRoutes.js';
+import observacionRoutes from './observacionRoutes.js';
+import tecnicoRoutes from './tecnicoRoutes.js';
+import tipoCultivoRoutes from './tipoCultivoRoutes.js';
+import vistaRoutes from './vistaRoutes.js';
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.use('/api/lotes', loteRoutes);
 router.use('/api/observaciones', observacionRoutes);
 router.use('/api/tecnicos', tecnicoRoutes);
 router.use('/api/tipos-cultivo', tipoCultivoRoutes);
+router.use('/', authRoutes);
 router.use('/', vistaRoutes);
 
-module.exports = router;
+export default router;

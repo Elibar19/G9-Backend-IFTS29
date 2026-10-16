@@ -1,10 +1,11 @@
-const express = require('express');
-const tecnicoController = require('../controllers/tecnicoController');
+import express from 'express';
+import * as tecnicoController from '../controllers/tecnicoController.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();
 
-router.get('/', tecnicoController.list);
-router.get('/:id', tecnicoController.getById);
-router.post('/', tecnicoController.create);
+router.get('/', asyncHandler(tecnicoController.list));
+router.get('/:id', asyncHandler(tecnicoController.getById));
+router.post('/', asyncHandler(tecnicoController.create));
 
-module.exports = router;
+export default router;

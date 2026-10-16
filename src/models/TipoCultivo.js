@@ -1,18 +1,21 @@
-class TipoCultivo {
-  constructor(id, nombre) {
-    this.id = id;
-    this.nombre = nombre;
+import mongoose from 'mongoose';
+
+const tipoCultivoSchema = new mongoose.Schema(
+  {
+    nombre: { type: String },
+  },
+  { versionKey: false }
+);
+
+
+export function validate(data) {
+  const errors = [];
+
+  if (!data.nombre) {
+    errors.push('El nombre del tipo de cultivo es obligatorio');
   }
 
-  validate() {
-    const errors = [];
-
-    if (!this.nombre) {
-      errors.push('El nombre del tipo de cultivo es obligatorio');
-    }
-
-    return errors;
-  }
+  return errors;
 }
 
-module.exports = TipoCultivo;
+export default mongoose.model('TipoCultivo', tipoCultivoSchema);

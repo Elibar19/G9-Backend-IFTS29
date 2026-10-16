@@ -1,114 +1,123 @@
-const Productor = require('../models/Productor');
-const storage = require('../storage');
-const { generateId } = require('../utils/id');
+import mongoose from 'mongoose';
+import Productor, { validate as validateProductor } from '../models/Productor.js';
+import Lote from '../models/Lote.js';
+import { mapId } from '../utils/dto.js';
+import { escapeRegex } from '../utils/regex.js';
 
 // GET /api/productores (obtener lista de productores)
-function list(req, res) {
+export async function list(req, res) {
   const localidad = req.query.localidad;
-  let productores = storage.productores.findAll();
 
-  if (localidad) {
-    productores = productores.filter((item) =>
-      item.localidad.toLowerCase().includes(localidad.toLowerCase())
-    );
-  }
+  const query = localidad ? { localidad: { $regex: escapeRegex(localidad), $options: 'i' } } : {};
+  const productores = (await Productor.find(query).lean()).map(mapId);
 
   res.json({ success: true, total: productores.length, data: productores });
 }
 
 // GET /api/productores/:id (obtener un productor por su id)
-function getById(req, res) {
-  const productor = storage.productores.findById(req.params.id);
+export async function getById(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Productor no encontrado' });
+  }
+
+  const productor = await Productor.findById(req.params.id).lean();
 
   if (!productor) {
     return res.status(404).json({ success: false, message: 'Productor no encontrado' });
   }
 
-  res.json({ success: true, data: productor });
+  res.json({ success: true, data: mapId(productor) });
 }
 
 // GET /api/productores/:id/lotes (obtener lista de lotes de un productor)
-function listLots(req, res) {
-  const productor = storage.productores.findById(req.params.id);
+export async function listLots(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Productor no encontrado' });
+  }
+
+  const productor = await Productor.findById(req.params.id).lean();
 
   if (!productor) {
     return res.status(404).json({ success: false, message: 'Productor no encontrado' });
   }
 
-  const lotes = storage.lotes.findAll().filter((lote) => lote.productorId === productor.id);
+  const lotes = (await Lote.find({ productorId: productor._id }).lean()).map(mapId);
 
   res.json({ success: true, total: lotes.length, data: lotes });
 }
 
 // POST /api/productores (crear un nuevo productor)
-function create(req, res) {
-  const nuevoProductor = new Productor(
-    generateId('prod'),
-    req.body.nombre,
-    req.body.cuit,
-    req.body.email,
-    req.body.telefono,
-    req.body.localidad
-  );
+export async function create(req, res) {
+  const datos = {
+    nombre: req.body.nombre,
+    cuit: req.body.cuit,
+    email: req.body.email,
+    telefono: req.body.telefono,
+    localidad: req.body.localidad,
+  };
 
-  const errors = nuevoProductor.validate();
+  const errors = validateProductor(datos);
   if (errors.length > 0) {
     return res.status(400).json({ success: false, message: errors.join('. ') });
   }
 
-  const alreadyExists = storage.productores
-    .findAll()
-    .some((item) => item.cuit === nuevoProductor.cuit);
+  const alreadyExists = await Productor.exists({ cuit: datos.cuit });
   if (alreadyExists) {
     return res.status(409).json({ success: false, message: 'Ya existe un productor con ese CUIT' });
   }
 
-  storage.productores.insert(nuevoProductor);
+  const nuevoProductor = mapId((await Productor.create(datos)).toObject());
   res.status(201).json({ success: true, data: nuevoProductor });
 }
 
 // PUT /api/productores/:id (actualizar un productor)
-function update(req, res) {
-  const productorExistente = storage.productores.findById(req.params.id);
+export async function update(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Productor no encontrado' });
+  }
+
+  const productorExistente = await Productor.findById(req.params.id).lean();
 
   if (!productorExistente) {
     return res.status(404).json({ success: false, message: 'Productor no encontrado' });
   }
 
-  const productorActualizado = new Productor(
-    productorExistente.id,
-    req.body.nombre,
-    req.body.cuit,
-    req.body.email,
-    req.body.telefono,
-    req.body.localidad
-  );
+  const datos = {
+    nombre: req.body.nombre,
+    cuit: req.body.cuit,
+    email: req.body.email,
+    telefono: req.body.telefono,
+    localidad: req.body.localidad,
+  };
 
-  const errors = productorActualizado.validate();
+  const errors = validateProductor(datos);
   if (errors.length > 0) {
     return res.status(400).json({ success: false, message: errors.join('. ') });
   }
 
-  const duplicateCuit = storage.productores
-    .findAll()
-    .some((item) => item.cuit === productorActualizado.cuit && item.id !== productorActualizado.id);
+  const duplicateCuit = await Productor.exists({ cuit: datos.cuit, _id: { $ne: productorExistente._id } });
   if (duplicateCuit) {
     return res.status(409).json({ success: false, message: 'Ya existe un productor con ese CUIT' });
   }
 
-  storage.productores.update(productorActualizado.id, productorActualizado);
+  await Productor.updateOne({ _id: productorExistente._id }, datos);
+  const productorActualizado = mapId({ _id: productorExistente._id, ...datos });
   res.json({ success: true, data: productorActualizado });
 }
 
 // DELETE /api/productores/:id (eliminar un productor)
-function deleteProductor(req, res) {
-  const productor = storage.productores.findById(req.params.id);
+export async function deleteProductor(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Productor no encontrado' });
+  }
+
+  const productor = await Productor.findById(req.params.id).lean();
 
   if (!productor) {
     return res.status(404).json({ success: false, message: 'Productor no encontrado' });
   }
 
-  const hasLots = storage.lotes.findAll().some((lote) => lote.productorId === productor.id);
+  const hasLots = await Lote.exists({ productorId: productor._id });
   if (hasLots) {
     return res.status(409).json({
       success: false,
@@ -116,15 +125,8 @@ function deleteProductor(req, res) {
     });
   }
 
-  storage.productores.delete(productor.id);
+  await Productor.deleteOne({ _id: productor._id });
   res.json({ success: true, message: 'Productor eliminado' });
 }
 
-module.exports = {
-  list,
-  getById,
-  listLots,
-  create,
-  update,
-  delete: deleteProductor,
-};
+export { deleteProductor as delete };

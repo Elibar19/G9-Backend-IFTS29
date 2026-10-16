@@ -1,10 +1,11 @@
-const express = require('express');
-const tipoCultivoController = require('../controllers/tipoCultivoController');
+import express from 'express';
+import * as tipoCultivoController from '../controllers/tipoCultivoController.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const router = express.Router();
 
-router.get('/', tipoCultivoController.list);
-router.get('/:id', tipoCultivoController.getById);
-router.post('/', tipoCultivoController.create);
+router.get('/', asyncHandler(tipoCultivoController.list));
+router.get('/:id', asyncHandler(tipoCultivoController.getById));
+router.post('/', asyncHandler(tipoCultivoController.create));
 
-module.exports = router;
+export default router;

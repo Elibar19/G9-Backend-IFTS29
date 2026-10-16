@@ -1,58 +1,61 @@
-const Lote = require('../models/Lote');
-const storage = require('../storage');
-const { generateId } = require('../utils/id');
-const { ALERT_LEVELS } = require('../constants/alertas');
+import mongoose from 'mongoose';
+import Lote, { validate as validateLote } from '../models/Lote.js';
+import Observacion from '../models/Observacion.js';
+import Productor from '../models/Productor.js';
+import Tecnico from '../models/Tecnico.js';
+import TipoCultivo from '../models/TipoCultivo.js';
+import { ALERT_LEVELS } from '../constants/alertas.js';
+import { mapId } from '../utils/dto.js';
 
 // Obtener observaciones de un lote y devolver el nivel de alerta de la más reciente.
-function getCurrentAlert(loteId) {
-  const observacionesDelLote = storage.observaciones
-    .findAll()
-    .filter((observacion) => observacion.loteId === loteId);
+async function getCurrentAlert(loteId) {
+  const ultima = await Observacion.find({ loteId }).sort({ fecha: -1 }).limit(1).lean();
 
-  if (observacionesDelLote.length === 0) {
+  if (ultima.length === 0) {
     return null;
   }
 
-  observacionesDelLote.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-  return observacionesDelLote[0].nivelAlerta;
+  return ultima[0].nivelAlerta;
 }
 
 // Agregar datos del productor y el nivel de alerta actual para que el lote se muestre completo.
-function withExtraInfo(lote) {
-  const productor = storage.productores.findById(lote.productorId);
+async function withExtraInfo(lote) {
+  const productor = lote.productorId
+    ? await Productor.findById(lote.productorId).lean()
+    : null;
 
   return {
     id: lote.id,
     nombre: lote.nombre,
     hectareas: lote.hectareas,
-    productorId: lote.productorId,
+    productorId: lote.productorId ? lote.productorId.toString() : null,
     ubicacion: lote.ubicacion,
-    productor: productor ? { id: productor.id, nombre: productor.nombre } : null,
-    nivelAlertaActual: getCurrentAlert(lote.id),
+    productor: productor ? { id: productor._id.toString(), nombre: productor.nombre } : null,
+    nivelAlertaActual: await getCurrentAlert(lote.id),
   };
 }
 
 // GET /api/lotes (obtener lista de lotes)
-function list(req, res) {
+export async function list(req, res) {
   const alerta = req.query.alerta;
   const productorId = req.query.productorId;
 
-  let lotes = storage.lotes.findAll();
-
-  if (productorId) {
-    lotes = lotes.filter((lote) => lote.productorId === productorId);
+  if (alerta && !ALERT_LEVELS.includes(alerta)) {
+    return res.status(400).json({
+      success: false,
+      message: 'El nivel de alerta debe ser: ' + ALERT_LEVELS.join(', '),
+    });
+  }
+  if (productorId && !mongoose.isValidObjectId(productorId)) {
+    return res.status(400).json({ success: false, message: 'El productorId indicado no es válido' });
   }
 
-  let result = lotes.map(withExtraInfo);
+  const query = productorId ? { productorId } : {};
+  const lotes = (await Lote.find(query).lean()).map(mapId);
+
+  let result = await Promise.all(lotes.map(withExtraInfo));
 
   if (alerta) {
-    if (!ALERT_LEVELS.includes(alerta)) {
-      return res.status(400).json({
-        success: false,
-        message: 'El nivel de alerta debe ser: ' + ALERT_LEVELS.join(', '),
-      });
-    }
     result = result.filter((lote) => lote.nivelAlertaActual === alerta);
   }
 
@@ -60,36 +63,43 @@ function list(req, res) {
 }
 
 // GET /api/lotes/:id (obtener un lote por su id)
-function getById(req, res) {
-  const lote = storage.lotes.findById(req.params.id);
+export async function getById(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Lote no encontrado' });
+  }
+
+  const lote = await Lote.findById(req.params.id).lean();
 
   if (!lote) {
     return res.status(404).json({ success: false, message: 'Lote no encontrado' });
   }
 
-  res.json({ success: true, data: withExtraInfo(lote) });
+  res.json({ success: true, data: await withExtraInfo(mapId(lote)) });
 }
 
 // GET /api/lotes/:id/observaciones (historial de observaciones)
-function getHistory(req, res) {
-  const lote = storage.lotes.findById(req.params.id);
+export async function getHistory(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Lote no encontrado' });
+  }
+
+  const lote = await Lote.findById(req.params.id).lean();
 
   if (!lote) {
     return res.status(404).json({ success: false, message: 'Lote no encontrado' });
   }
 
-  const tecnicos = storage.tecnicos.findAll();
-  const tiposCultivo = storage.tiposCultivo.findAll();
+  const tecnicos = (await Tecnico.find().lean()).map(mapId);
+  const tiposCultivo = (await TipoCultivo.find().lean()).map(mapId);
 
-  let observaciones = storage.observaciones.findAll().filter((observacion) => observacion.loteId === lote.id);
-  observaciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  let observaciones = await Observacion.find({ loteId: lote._id }).sort({ fecha: -1 }).lean();
 
-  observaciones = observaciones.map((observacion) => {
-    const tecnico = tecnicos.find((item) => item.id === observacion.tecnicoId);
-    const tipoCultivo = tiposCultivo.find((item) => item.id === observacion.tipoCultivoId);
+  const data = observaciones.map((observacion) => {
+    const tecnico = tecnicos.find((item) => item.id === String(observacion.tecnicoId));
+    const tipoCultivo = tiposCultivo.find((item) => item.id === String(observacion.tipoCultivoId));
 
     return {
-      id: observacion.id,
+      id: observacion._id.toString(),
       fecha: observacion.fecha,
       estadoCultivo: observacion.estadoCultivo,
       observaciones: observacion.observaciones,
@@ -101,77 +111,86 @@ function getHistory(req, res) {
 
   res.json({
     success: true,
-    lote: withExtraInfo(lote),
-    total: observaciones.length,
-    data: observaciones,
+    lote: await withExtraInfo(mapId(lote)),
+    total: data.length,
+    data,
   });
 }
 
 // POST /api/lotes (crear un nuevo lote)
-function create(req, res) {
-  const nuevoLote = new Lote(
-    generateId('lote'),
-    req.body.nombre,
-    Number(req.body.hectareas),
-    req.body.productorId,
-    req.body.ubicacion
-  );
+export async function create(req, res) {
+  const datos = {
+    nombre: req.body.nombre,
+    hectareas: Number(req.body.hectareas),
+    productorId: req.body.productorId,
+    ubicacion: req.body.ubicacion,
+  };
 
-  const errors = nuevoLote.validate();
+  const errors = validateLote(datos);
   if (errors.length > 0) {
     return res.status(400).json({ success: false, message: errors.join('. ') });
   }
 
-  const productor = storage.productores.findById(nuevoLote.productorId);
+  const productor = mongoose.isValidObjectId(datos.productorId)
+    ? await Productor.findById(datos.productorId).lean()
+    : null;
   if (!productor) {
     return res.status(400).json({ success: false, message: 'No existe el productor indicado' });
   }
 
-  storage.lotes.insert(nuevoLote);
-  res.status(201).json({ success: true, data: withExtraInfo(nuevoLote) });
+  const nuevoLote = mapId((await Lote.create(datos)).toObject());
+  res.status(201).json({ success: true, data: await withExtraInfo(nuevoLote) });
 }
 
 // PUT /api/lotes/:id (actualizar un lote)
-function update(req, res) {
-  const loteExistente = storage.lotes.findById(req.params.id);
+export async function update(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Lote no encontrado' });
+  }
+
+  const loteExistente = await Lote.findById(req.params.id).lean();
 
   if (!loteExistente) {
     return res.status(404).json({ success: false, message: 'Lote no encontrado' });
   }
 
-  const loteActualizado = new Lote(
-    loteExistente.id,
-    req.body.nombre,
-    Number(req.body.hectareas),
-    req.body.productorId,
-    req.body.ubicacion
-  );
+  const datos = {
+    nombre: req.body.nombre,
+    hectareas: Number(req.body.hectareas),
+    productorId: req.body.productorId,
+    ubicacion: req.body.ubicacion,
+  };
 
-  const errors = loteActualizado.validate();
+  const errors = validateLote(datos);
   if (errors.length > 0) {
     return res.status(400).json({ success: false, message: errors.join('. ') });
   }
 
-  const productor = storage.productores.findById(loteActualizado.productorId);
+  const productor = mongoose.isValidObjectId(datos.productorId)
+    ? await Productor.findById(datos.productorId).lean()
+    : null;
   if (!productor) {
     return res.status(400).json({ success: false, message: 'No existe el productor indicado' });
   }
 
-  storage.lotes.update(loteActualizado.id, loteActualizado);
-  res.json({ success: true, data: withExtraInfo(loteActualizado) });
+  await Lote.updateOne({ _id: loteExistente._id }, datos);
+  const loteActualizado = mapId({ _id: loteExistente._id, ...datos });
+  res.json({ success: true, data: await withExtraInfo(loteActualizado) });
 }
 
 // DELETE /api/lotes/:id (eliminar un lote)
-function deleteLote(req, res) {
-  const lote = storage.lotes.findById(req.params.id);
+export async function deleteLote(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: 'Lote no encontrado' });
+  }
+
+  const lote = await Lote.findById(req.params.id).lean();
 
   if (!lote) {
     return res.status(404).json({ success: false, message: 'Lote no encontrado' });
   }
 
-  const hasObservations = storage.observaciones
-    .findAll()
-    .some((observacion) => observacion.loteId === lote.id);
+  const hasObservations = await Observacion.exists({ loteId: lote._id });
 
   if (hasObservations) {
     return res.status(409).json({
@@ -180,15 +199,8 @@ function deleteLote(req, res) {
     });
   }
 
-  storage.lotes.delete(lote.id);
+  await Lote.deleteOne({ _id: lote._id });
   res.json({ success: true, message: 'Lote eliminado' });
 }
 
-module.exports = {
-  list,
-  getById,
-  getHistory,
-  create,
-  update,
-  delete: deleteLote,
-};
+export { deleteLote as delete };

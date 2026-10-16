@@ -1,40 +1,47 @@
-const storage = require('../storage');
-const Observacion = require('../models/Observacion');
-const { generateId } = require('../utils/id');
-const { ALERT_LEVELS, CROP_STATUSES } = require('../constants/alertas');
+import mongoose from 'mongoose';
+import Observacion, { validate as validateObservacion } from '../models/Observacion.js';
+import Lote from '../models/Lote.js';
+import Productor from '../models/Productor.js';
+import Tecnico from '../models/Tecnico.js';
+import TipoCultivo from '../models/TipoCultivo.js';
+import { ALERT_LEVELS, CROP_STATUSES } from '../constants/alertas.js';
+import { mapId } from '../utils/dto.js';
 
 // Buscar observaciones de un lote y devolver el nivel de alerta de la más reciente.
-function getCurrentAlert(loteId) {
-  const observacionesDelLote = storage.observaciones
-    .findAll()
-    .filter((observacion) => observacion.loteId === loteId);
+async function getCurrentAlert(loteId) {
+  const ultima = await Observacion.find({ loteId }).sort({ fecha: -1 }).limit(1).lean();
 
-  if (observacionesDelLote.length === 0) {
+  if (ultima.length === 0) {
     return 'Sin registros';
   }
 
-  observacionesDelLote.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-  return observacionesDelLote[0].nivelAlerta;
+  return ultima[0].nivelAlerta;
 }
 
 // GET /  (página de inicio)
-function home(req, res) {
-  const lotes = storage.lotes.findAll().map((lote) => ({
-    ...lote,
-    nivelAlertaActual: getCurrentAlert(lote.id),
-  }));
+export async function home(req, res) {
+  const lotesBase = (await Lote.find().lean()).map(mapId);
+  const lotes = await Promise.all(
+    lotesBase.map(async (lote) => ({ ...lote, nivelAlertaActual: await getCurrentAlert(lote.id) }))
+  );
 
-  let ultimasObservaciones = storage.observaciones.findAll();
-  ultimasObservaciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-  ultimasObservaciones = ultimasObservaciones.slice(0, 5);
+  const ultimasObservaciones = (
+    await Observacion.find().sort({ fecha: -1 }).limit(5).lean()
+  ).map(mapId);
+
+  const [totalProductores, totalTecnicos, totalObservaciones] = await Promise.all([
+    Productor.countDocuments(),
+    Tecnico.countDocuments(),
+    Observacion.countDocuments(),
+  ]);
 
   res.render('index', {
     title: 'Inicio',
     totals: {
-      productores: storage.productores.findAll().length,
+      productores: totalProductores,
       lotes: lotes.length,
-      tecnicos: storage.tecnicos.findAll().length,
-      observaciones: storage.observaciones.findAll().length,
+      tecnicos: totalTecnicos,
+      observaciones: totalObservaciones,
     },
     lotes,
     observaciones: ultimasObservaciones,
@@ -42,15 +49,21 @@ function home(req, res) {
 }
 
 // GET /lotes (página de lotes)
-function lots(req, res) {
-  const listaLotes = storage.lotes.findAll().map((lote) => {
-    const productor = storage.productores.findById(lote.productorId);
-    return {
-      ...lote,
-      productorNombre: productor ? productor.nombre : 'Sin productor',
-      nivelAlertaActual: getCurrentAlert(lote.id),
-    };
-  });
+export async function lots(req, res) {
+  const lotesBase = (await Lote.find().lean()).map(mapId);
+  const productores = (await Productor.find().lean()).map(mapId);
+  const porId = new Map(productores.map((productor) => [productor.id, productor]));
+
+  const listaLotes = await Promise.all(
+    lotesBase.map(async (lote) => {
+      const productor = lote.productorId ? porId.get(String(lote.productorId)) : null;
+      return {
+        ...lote,
+        productorNombre: productor ? productor.nombre : 'Sin productor',
+        nivelAlertaActual: await getCurrentAlert(lote.id),
+      };
+    })
+  );
 
   res.render('lotes/index', {
     title: 'Lotes',
@@ -59,10 +72,8 @@ function lots(req, res) {
 }
 
 // GET /lotes/:id (página de detalle de un lote)
-function lotDetail(req, res) {
-  const lote = storage.lotes.findById(req.params.id);
-
-  if (!lote) {
+export async function lotDetail(req, res) {
+  if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).render('error', {
       title: 'Error',
       statusCode: 404,
@@ -70,16 +81,30 @@ function lotDetail(req, res) {
     });
   }
 
-  const productor = storage.productores.findById(lote.productorId);
-  const tecnicos = storage.tecnicos.findAll();
-  const tiposCultivo = storage.tiposCultivo.findAll();
+  const loteDoc = await Lote.findById(req.params.id).lean();
 
-  let historial = storage.observaciones.findAll().filter((observacion) => observacion.loteId === lote.id);
-  historial.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  if (!loteDoc) {
+    return res.status(404).render('error', {
+      title: 'Error',
+      statusCode: 404,
+      message: 'Lote no encontrado',
+    });
+  }
 
-  historial = historial.map((observacion) => {
-    const tecnico = tecnicos.find((item) => item.id === observacion.tecnicoId);
-    const tipoCultivo = tiposCultivo.find((item) => item.id === observacion.tipoCultivoId);
+  const lote = mapId(loteDoc);
+  const productorDoc = lote.productorId
+    ? await Productor.findById(lote.productorId).lean()
+    : null;
+  const productor = productorDoc ? mapId(productorDoc) : null;
+
+  const tecnicos = (await Tecnico.find().lean()).map(mapId);
+  const tiposCultivo = (await TipoCultivo.find().lean()).map(mapId);
+
+  const historialBase = await Observacion.find({ loteId: loteDoc._id }).sort({ fecha: -1 }).lean();
+
+  const historial = historialBase.map(mapId).map((observacion) => {
+    const tecnico = tecnicos.find((item) => item.id === String(observacion.tecnicoId));
+    const tipoCultivo = tiposCultivo.find((item) => item.id === String(observacion.tipoCultivoId));
     return {
       ...observacion,
       tecnicoNombre: tecnico ? tecnico.nombre : '—',
@@ -92,23 +117,22 @@ function lotDetail(req, res) {
     lote,
     productor,
     historial,
-    nivelAlertaActual: getCurrentAlert(lote.id),
+    nivelAlertaActual: await getCurrentAlert(lote.id),
   });
 }
 
 // GET /observaciones (página de observaciones)
-function observations(req, res) {
-  const tecnicos = storage.tecnicos.findAll();
-  const tiposCultivo = storage.tiposCultivo.findAll();
-  const todosLosLotes = storage.lotes.findAll();
+export async function observations(req, res) {
+  const tecnicos = (await Tecnico.find().lean()).map(mapId);
+  const tiposCultivo = (await TipoCultivo.find().lean()).map(mapId);
+  const todosLosLotes = (await Lote.find().lean()).map(mapId);
 
-  let listaObservaciones = storage.observaciones.findAll();
-  listaObservaciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  const listaBase = await Observacion.find().sort({ fecha: -1 }).lean();
 
-  listaObservaciones = listaObservaciones.map((observacion) => {
-    const lote = todosLosLotes.find((item) => item.id === observacion.loteId);
-    const tecnico = tecnicos.find((item) => item.id === observacion.tecnicoId);
-    const tipoCultivo = tiposCultivo.find((item) => item.id === observacion.tipoCultivoId);
+  const listaObservaciones = listaBase.map(mapId).map((observacion) => {
+    const lote = todosLosLotes.find((item) => item.id === String(observacion.loteId));
+    const tecnico = tecnicos.find((item) => item.id === String(observacion.tecnicoId));
+    const tipoCultivo = tiposCultivo.find((item) => item.id === String(observacion.tipoCultivoId));
     return {
       ...observacion,
       loteNombre: lote ? lote.nombre : '—',
@@ -124,31 +148,30 @@ function observations(req, res) {
 }
 
 // GET /observaciones/nueva (formulario de nueva observación)
-function newObservationForm(req, res) {
+export async function newObservationForm(req, res) {
   res.render('observaciones/nueva', {
     title: 'Nueva observación',
-    lotes: storage.lotes.findAll(),
-    tecnicos: storage.tecnicos.findAll(),
-    tiposCultivo: storage.tiposCultivo.findAll(),
+    lotes: (await Lote.find().lean()).map(mapId),
+    tecnicos: (await Tecnico.find().lean()).map(mapId),
+    tiposCultivo: (await TipoCultivo.find().lean()).map(mapId),
     nivelesAlerta: ALERT_LEVELS,
     estadosCultivo: CROP_STATUSES,
   });
 }
 
 // POST /observaciones (guardar la nueva observación)
-function createObservation(req, res) {
-  const nuevaObservacion = new Observacion(
-    generateId('obs'),
-    req.body.loteId,
-    req.body.tecnicoId,
-    req.body.fecha,
-    req.body.tipoCultivoId,
-    req.body.estadoCultivo,
-    req.body.observaciones,
-    req.body.nivelAlerta
-  );
+export async function createObservation(req, res) {
+  const datos = {
+    loteId: req.body.loteId,
+    tecnicoId: req.body.tecnicoId,
+    fecha: req.body.fecha,
+    tipoCultivoId: req.body.tipoCultivoId,
+    estadoCultivo: req.body.estadoCultivo,
+    observaciones: req.body.observaciones,
+    nivelAlerta: req.body.nivelAlerta,
+  };
 
-  const errors = nuevaObservacion.validate();
+  const errors = validateObservacion(datos);
   if (errors.length > 0) {
     return res.status(400).render('error', {
       title: 'Error',
@@ -157,7 +180,9 @@ function createObservation(req, res) {
     });
   }
 
-  if (!storage.lotes.findById(nuevaObservacion.loteId)) {
+  const loteExiste =
+    mongoose.isValidObjectId(datos.loteId) && (await Lote.exists({ _id: datos.loteId }));
+  if (!loteExiste) {
     return res.status(400).render('error', {
       title: 'Error',
       statusCode: 400,
@@ -165,15 +190,6 @@ function createObservation(req, res) {
     });
   }
 
-  storage.observaciones.insert(nuevaObservacion);
+  const nuevaObservacion = await Observacion.create(datos);
   res.redirect(`/lotes/${nuevaObservacion.loteId}`);
 }
-
-module.exports = {
-  home,
-  lots,
-  lotDetail,
-  observations,
-  newObservationForm,
-  createObservation,
-};
