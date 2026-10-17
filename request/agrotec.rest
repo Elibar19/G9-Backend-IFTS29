@@ -1,7 +1,7 @@
 # Para ejecutar estas requests instalar la extensión "REST Client" de VS Code
 
 
-@host = http://localhost:3000
+@host = http://localhost:3001
 
 ### Salud del servicio: verifica que la API está en funcionamiento
 GET {{host}}/api/health
@@ -10,10 +10,10 @@ GET {{host}}/api/health
 GET {{host}}/api/productores
 
 ### Productores: obtener uno por id
-GET {{host}}/api/productores/prod-001
+GET {{host}}/api/productores/857bd7d93681780a1dcda895
 
 ### Productores: lotes del productor
-GET {{host}}/api/productores/prod-001/lotes
+GET {{host}}/api/productores/857bd7d93681780a1dcda895/lotes
 
 ### Productores: crear uno nuevo
 POST {{host}}/api/productores
@@ -27,8 +27,8 @@ Content-Type: application/json
   "localidad": "Pergamino"
 }
 
-### Productores: actualizar (usar un id creado arriba o prod-003)
-PUT {{host}}/api/productores/prod-003
+### Productores: actualizar (usar un id creado arriba o ad504b14f116c40c96d33b72)
+PUT {{host}}/api/productores/ad504b14f116c40c96d33b72
 Content-Type: application/json
 
 {
@@ -40,7 +40,7 @@ Content-Type: application/json
 }
 
 ### Productores: eliminar
-DELETE {{host}}/api/productores/prod-003
+DELETE {{host}}/api/productores/ad504b14f116c40c96d33b72
 
 ### Lotes: listar todos
 GET {{host}}/api/lotes
@@ -49,13 +49,13 @@ GET {{host}}/api/lotes
 GET {{host}}/api/lotes?alerta=Crítico
 
 ### Lotes: filtrar por productor
-GET {{host}}/api/lotes?productorId=prod-001
+GET {{host}}/api/lotes?productorId=857bd7d93681780a1dcda895
 
 ### Lotes: obtener uno por id
-GET {{host}}/api/lotes/lote-001
+GET {{host}}/api/lotes/e5b274ac98f77b349f0a1f3d
 
 ### Lotes: historial de observaciones del lote
-GET {{host}}/api/lotes/lote-001/observaciones
+GET {{host}}/api/lotes/e5b274ac98f77b349f0a1f3d/observaciones
 
 ### Lotes: crear uno nuevo
 POST {{host}}/api/lotes
@@ -64,23 +64,23 @@ Content-Type: application/json
 {
   "nombre": "Lote de Prueba",
   "hectareas": 25,
-  "productorId": "prod-001",
+  "productorId": "857bd7d93681780a1dcda895",
   "ubicacion": "Ruta 9 km 5"
 }
 
 ### Lotes: actualizar
-PUT {{host}}/api/lotes/lote-004
+PUT {{host}}/api/lotes/eada5362fbe4c421d83c75c8
 Content-Type: application/json
 
 {
   "nombre": "Lote Actualizado",
   "hectareas": 40,
-  "productorId": "prod-002",
+  "productorId": "f34b21e622745c1fb1683d38",
   "ubicacion": "Camino Real km 3"
 }
 
 ### Lotes: eliminar
-DELETE {{host}}/api/lotes/lote-004
+DELETE {{host}}/api/lotes/eada5362fbe4c421d83c75c8
 
 ### Observaciones: listar todas
 GET {{host}}/api/observaciones
@@ -89,23 +89,23 @@ GET {{host}}/api/observaciones
 GET {{host}}/api/observaciones?alerta=Atención
 
 ### Observaciones: filtrar por lote
-GET {{host}}/api/observaciones?loteId=lote-001
+GET {{host}}/api/observaciones?loteId=e5b274ac98f77b349f0a1f3d
 
 ### Observaciones: filtrar por técnico
-GET {{host}}/api/observaciones?tecnicoId=tec-001
+GET {{host}}/api/observaciones?tecnicoId=88874107c49eee3dc1f59416
 
 ### Observaciones: obtener una por id
-GET {{host}}/api/observaciones/obs-001
+GET {{host}}/api/observaciones/708d318c2b974143b4b14add
 
 ### Observaciones: crear una nueva
 POST {{host}}/api/observaciones
 Content-Type: application/json
 
 {
-  "loteId": "lote-001",
-  "tecnicoId": "tec-001",
+  "loteId": "e5b274ac98f77b349f0a1f3d",
+  "tecnicoId": "88874107c49eee3dc1f59416",
   "fecha": "2026-09-01",
-  "tipoCultivoId": "cult-001",
+  "tipoCultivoId": "2a2545d8c5a491a4b0955563",
   "estadoCultivo": "Bueno",
   "observaciones": "Observación de prueba",
   "nivelAlerta": "Normal"
@@ -116,36 +116,36 @@ POST {{host}}/api/observaciones
 Content-Type: application/json
 
 {
-  "loteId": "lote-001",
-  "tecnicoId": "tec-001",
-  "tipoCultivoId": "cult-001",
+  "loteId": "e5b274ac98f77b349f0a1f3d",
+  "tecnicoId": "88874107c49eee3dc1f59416",
+  "tipoCultivoId": "2a2545d8c5a491a4b0955563",
   "estadoCultivo": "Bueno",
   "observaciones": "Sin fecha",
   "nivelAlerta": "Normal"
 }
 
 ### Observaciones: actualizar
-PUT {{host}}/api/observaciones/obs-005
+PUT {{host}}/api/observaciones/df4294b7fd0552f431867dba
 Content-Type: application/json
 
 {
-  "loteId": "lote-002",
-  "tecnicoId": "tec-002",
+  "loteId": "2dd02965a8e93028641e93e3",
+  "tecnicoId": "63b4045f63bd21d60eefad3e",
   "fecha": "2026-09-02",
-  "tipoCultivoId": "cult-002",
+  "tipoCultivoId": "5baace6fb44a92fe027b6da5",
   "estadoCultivo": "Regular",
   "observaciones": "Observación actualizada",
   "nivelAlerta": "Atención"
 }
 
 ### Observaciones: eliminar (regla de negocio: responde 403, no se borran)
-DELETE {{host}}/api/observaciones/obs-005
+DELETE {{host}}/api/observaciones/df4294b7fd0552f431867dba
 
 ### Técnicos: listar todos
 GET {{host}}/api/tecnicos
 
 ### Técnicos: obtener uno por id
-GET {{host}}/api/tecnicos/tec-001
+GET {{host}}/api/tecnicos/88874107c49eee3dc1f59416
 
 ### Técnicos: crear uno nuevo
 POST {{host}}/api/tecnicos
@@ -162,7 +162,7 @@ Content-Type: application/json
 GET {{host}}/api/tipos-cultivo
 
 ### Tipos de cultivo: obtener uno por id
-GET {{host}}/api/tipos-cultivo/cult-001
+GET {{host}}/api/tipos-cultivo/2a2545d8c5a491a4b0955563
 
 ### Tipos de cultivo: crear uno nuevo
 POST {{host}}/api/tipos-cultivo
@@ -179,7 +179,7 @@ GET {{host}}/
 GET {{host}}/lotes
 
 ### Vista: detalle de lote con historial
-GET {{host}}/lotes/lote-001
+GET {{host}}/lotes/e5b274ac98f77b349f0a1f3d
 
 ### Vista: listado de observaciones
 GET {{host}}/observaciones
