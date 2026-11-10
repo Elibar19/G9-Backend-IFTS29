@@ -1,6 +1,13 @@
 # AgroTec — Monitoreo de Lotes Agrícolas (API + Panel Web)
 
-Segunda entrega (2° parcial) — Desarrollo Web Backend, IFTS 29 — Grupo 9.
+Tercera entrega — Entrega Final (3° parcial) — Desarrollo Web Backend, IFTS 29 — Grupo 9.
+
+## Novedades de la 3ª entrega (seguridad)
+
+- **Contraseñas hasheadas con bcrypt**: el seed guarda `password` como hash `$2b$` y Passport verifica con `bcrypt.compare`. Se cierra la limitación 1 de la 2ª entrega (texto plano).
+- **API REST protegida** (`requireApiAuth`): sin sesión → **401 JSON**; escritura (`POST/PUT/DELETE`) solo rol `admin` → si no, **403 JSON**. Solo `GET /api/health` queda abierta (health-check del deploy). Se cierra la limitación 2 (API sin autenticación).
+- **Sesiones persistentes en MongoDB** (`connect-mongo`): sobreviven reinicios del server — requisito para el deploy posiblemente en Render — y en `NODE_ENV=production` se activan `trust proxy` y cookie `secure`.
+- **Pruebas actualizadas**: `request/agrotec.rest` (49 requests) incluye los casos de seguridad; requiere `rest-client.cookieJar: true` porque `/api/*` exige sesión.
 
 ## Descripción del Caso 4 — AgroTec
 
@@ -54,7 +61,9 @@ El proyecto sigue una arquitectura **MVC**, persiste los datos en **MongoDB** me
 | MongoDB 7 (Docker) | Base de datos |
 | Mongoose | Modelado de datos (schemas) y consultas |
 | Pug | Vistas del panel web (SSR) |
-| express-session + Passport (passport-local) | Login del panel web con dos roles |
+| express-session + Passport (passport-local) | Login del panel y de la API con dos roles |
+| bcrypt | Hash de contraseñas (`$2b$`) en la BD y verificación en el login |
+| connect-mongo | Store de sesiones en MongoDB (persisten reinicios) |
 | dotenv | Variables de entorno |
 | nodemon | Reinicio automático en desarrollo |
 | REST Client (VS Code) | Pruebas de la API (`request/agrotec.rest`) |
@@ -94,7 +103,8 @@ El servidor levanta en `http://localhost:3001`. Para verificar que funciona: `GE
 |---|---|---|
 | `PORT` | `3001` | Puerto del servidor |
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017/agrotec` | Cadena de conexión (admite una URI de Atlas `mongodb+srv://...`) |
-| `SESSION_SECRET` | `agrotec-dev-secret` | Secreto de la sesión del panel web |
+| `SESSION_SECRET` | `agrotec-dev-secret` | Secreto de la sesión del panel y de la API |
+| `NODE_ENV` | `development` | En `production` activa `trust proxy` y cookie `secure` (necesario tras el proxy de Render) |
 
 | Comando | Descripción |
 |---|---|
@@ -104,7 +114,7 @@ El servidor levanta en `http://localhost:3001`. Para verificar que funciona: `GE
 | `npm start` | Levanta el servidor con Node |
 | `npm run dev` | Levanta el servidor con nodemon |
 
-**Usuarios de prueba** (creados por el seed): `admin` / `admin123` (rol admin, puede cargar observaciones) y `lector` / `lector123` (rol usuario, solo lectura).
+**Usuarios de prueba** (creados por el seed, con contraseña hasheada bcrypt): `admin` / `admin123` (rol admin: lectura y escritura en API + alta de observaciones en el panel) y `lector` / `lector123` (rol usuario: solo lectura).
 
 ## Funcionamiento de la aplicación
 
@@ -114,7 +124,8 @@ El servidor levanta en `http://localhost:3001`. Para verificar que funciona: `GE
 4. **Controladores** (`src/controllers/`): reciben el request, validan los datos con la función `validate()` del modelo, verifican que existan las referencias (por ejemplo, que el `productorId` de un lote exista) y consultan la base con Mongoose (`find`, `findById`, `create`, `updateOne`, `deleteOne`, `exists`). Responden JSON (API) o renderizan una vista Pug (panel).
 5. **Modelos** (`src/models/`): un schema de Mongoose por entidad + una función `validate(data)` con las validaciones simples de negocio.
 6. **Alerta actual de un lote**: se busca la observación más reciente del lote (`Observacion.find({ loteId }).sort({ fecha: -1 }).limit(1)`) y se toma su `nivelAlerta`.
-7. **Panel web**: el usuario inicia sesión en `/login`; todas las vistas exigen sesión (`requireLogin`) y el alta de observaciones exige rol `admin` (`requireRole('admin')`). La API REST queda sin login para poder probarla con REST Client.
+7. **Panel web**: el usuario inicia sesión en `/login`; todas las vistas exigen sesión (`requireLogin`) y el alta de observaciones exige rol `admin` (`requireRole('admin')`).
+8. **API REST protegida** (3ª entrega): las rutas `/api/*` montan `requireApiAuth` — sin sesión responden **401 JSON**, y `POST/PUT/DELETE` sin rol `admin` responden **403 JSON** (nunca redirect, para mantener el formato uniforme RNF04). Excepción: `GET /api/health`, abierta para el health-check del deploy.
 
 ## Panel web (SSR)
 
@@ -131,6 +142,8 @@ El servidor levanta en `http://localhost:3001`. Para verificar que funciona: `GE
 ## Endpoints de la API REST
 
 Formato de respuesta: `{ success, data }` (los listados agregan `total`) o `{ success, message }` ante error. Los ids son **ObjectId de MongoDB** en texto hexadecimal; un `:id` con formato inválido responde 404 y un filtro por query con id inválido responde 400.
+
+**Autenticación (3ª entrega):** todas las rutas `/api/*` exigen una sesión válida salvo `GET /api/health`. Lectura (`GET`): cualquier usuario logueado. Escritura (`POST`, `PUT`, `DELETE`): solo rol `admin`. Sin sesión → `401`; sesión sin rol → `403`; ambos en JSON `{ success: false, message }`. Para probarlas con REST Client: loguearse primero con `POST /login` y activar `rest-client.cookieJar: true`.
 
 ### Productores — `/api/productores`
 
@@ -184,7 +197,7 @@ Formato de respuesta: `{ success, data }` (los listados agregan `total`) o `{ su
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/health` | Verifica que la API está en funcionamiento |
+| GET | `/api/health` | Verifica que la API está en funcionamiento (**pública**: única `/api/*` sin sesión, usada por el health-check de Render) |
 
 ## Estructura de carpetas (arquitectura MVC)
 
@@ -227,6 +240,7 @@ G9-Backend-IFTS29/
 - Las relaciones se guardan como `ObjectId` con `ref` (`Lote.productorId → Productor`, `Observacion.loteId → Lote`, `tecnicoId → Tecnico`, `tipoCultivoId → TipoCultivo`).
 - Los filtros y ordenamientos se resuelven en la base (`find(query)`, `sort({ fecha: -1 })`, `exists`).
 - `npm run seed` lee `data/*.json` y los inserta en MongoDB con ids deterministas (el mismo dato genera siempre el mismo ObjectId), por eso los ids de `request/agrotec.rest` funcionan después de cada seed.
+- La colección `sessions` la administra `connect-mongo` (no el seed): guarda la sesión de cada usuario logueado, por eso el login sobrevive reinicios del server.
 
 ## Middlewares, validaciones y manejo de errores
 
@@ -234,8 +248,9 @@ G9-Backend-IFTS29/
 |---|---|---|
 | `express.json` / `express.urlencoded` | `src/app.js` | Leen el body JSON (API) y de formularios (panel) |
 | `express.static` | `src/app.js` | Sirve `public/` |
-| `express-session` + Passport | `src/app.js`, `src/config/passport.js` | Sesión de login |
-| `requireLogin` / `requireRole` | `src/middleware/requireAuth.js` | Protegen el panel; 403 si el rol no alcanza |
+| `express-session` + Passport | `src/app.js`, `src/config/passport.js` | Sesión de login (store `connect-mongo` en MongoDB; validación con `bcrypt.compare`) |
+| `requireLogin` / `requireRole` | `src/middleware/requireAuth.js` | Protegen el panel; redirigen a `/login` si no hay sesión y responden 403 si el rol no alcanza |
+| `requireApiAuth` | `src/middleware/requireAuth.js` | Protege la API: sin sesión → **401 JSON**; sin rol `admin` → **403 JSON** (no redirige) |
 | `asyncHandler` | `src/utils/asyncHandler.js` | Captura errores de `async/await` y los envía a `errorHandler` |
 | `notFound` | `src/middleware/notFound.js` | 404 en JSON (API) o vista de error (panel) |
 | `errorHandler` | `src/middleware/errorHandler.js` | 500 en JSON (API) o vista de error (panel) |
@@ -250,55 +265,71 @@ G9-Backend-IFTS29/
 
 ## Pruebas documentadas
 
-Las pruebas se realizaron con la extensión **REST Client** de VS Code sobre `request/agrotec.rest` (35 requests), después de ejecutar `npm run seed`. Cada request del archivo corresponde a una fila de esta tabla. Completar la columna **Obtenido** al ejecutar cada prueba (✅ si coincide con lo esperado).
+Las pruebas se ejecutan con la extensión **REST Client** de VS Code sobre `request/agrotec.rest` (49 requests: 35 funcionales + casos de seguridad de la 3ª entrega), después de `npm run seed` y con el server arriba. **Requisito:** `"rest-client.cookieJar": true` en `settings.json`, porque la API exige sesión. Cada request del archivo corresponde a una fila de esta tabla (columna **Obtenido** verificada el 2026-11-10; salidas completas en `docs/evidencias/` del proyecto).
 
 | # | Prueba | Request | Esperado | Obtenido |
 |---|---|---|---|---|
-| 1 | Salud del servicio | `GET /api/health` | 200 `success: true` | |
-| 2 | Listar productores | `GET /api/productores` | 200 con `total` y `data` | |
-| 3 | Productor por id | `GET /api/productores/:id` | 200 | |
-| 4 | Lotes de un productor | `GET /api/productores/:id/lotes` | 200 | |
-| 5 | Crear productor | `POST /api/productores` | 201 (409 si se repite el CUIT) | |
-| 6 | Actualizar productor | `PUT /api/productores/:id` | 200 | |
-| 7 | Eliminar productor | `DELETE /api/productores/:id` | 200, o 409 si tiene lotes | |
-| 8 | Listar lotes | `GET /api/lotes` | 200 con `nivelAlertaActual` | |
-| 9 | Filtrar lotes por alerta | `GET /api/lotes?alerta=Crítico` | 200 solo lotes en Crítico | |
-| 10 | Filtrar lotes por productor | `GET /api/lotes?productorId=...` | 200 | |
-| 11 | Lote por id | `GET /api/lotes/:id` | 200 | |
-| 12 | Historial del lote | `GET /api/lotes/:id/observaciones` | 200 ordenado por fecha desc. | |
-| 13 | Crear lote | `POST /api/lotes` | 201 | |
-| 14 | Actualizar lote | `PUT /api/lotes/:id` | 200 | |
-| 15 | Eliminar lote | `DELETE /api/lotes/:id` | 200, o 409 si tiene observaciones | |
-| 16 | Listar observaciones | `GET /api/observaciones` | 200 | |
-| 17 | Filtrar por alerta | `GET /api/observaciones?alerta=...` | 200 | |
-| 18 | Filtrar por lote | `GET /api/observaciones?loteId=...` | 200 | |
-| 19 | Filtrar por técnico | `GET /api/observaciones?tecnicoId=...` | 200 | |
-| 20 | Observación por id | `GET /api/observaciones/:id` | 200 | |
-| 21 | Crear observación | `POST /api/observaciones` | 201 | |
-| 22 | Crear observación sin fecha | `POST /api/observaciones` | **400** (validación) | |
-| 23 | Actualizar observación | `PUT /api/observaciones/:id` | 200 | |
-| 24 | Eliminar observación | `DELETE /api/observaciones/:id` | **403** (regla de negocio) | |
-| 25 | Listar técnicos | `GET /api/tecnicos` | 200 | |
-| 26 | Técnico por id | `GET /api/tecnicos/:id` | 200 | |
-| 27 | Crear técnico | `POST /api/tecnicos` | 201 | |
-| 28 | Listar tipos de cultivo | `GET /api/tipos-cultivo` | 200 | |
-| 29 | Tipo de cultivo por id | `GET /api/tipos-cultivo/:id` | 200 | |
-| 30 | Crear tipo de cultivo | `POST /api/tipos-cultivo` | 201 (409 si el nombre existe) | |
-| 31–35 | Vistas del panel (`/`, `/lotes`, `/lotes/:id`, `/observaciones`, `/observaciones/nueva`) | `GET` | Sin sesión: redirige a `/login`. Con sesión: 200 (el formulario solo para admin, si no 403) | |
+| 1 | Salud del servicio | `GET /api/health` | 200 `success: true` | ✅ 200 (abierta, sin sesión) |
+| 2 | Listar productores | `GET /api/productores` | 200 con `total` y `data` | ✅ 200 |
+| 3 | Productor por id | `GET /api/productores/:id` | 200 | ✅ 200 |
+| 4 | Lotes de un productor | `GET /api/productores/:id/lotes` | 200 | ✅ 200 |
+| 5 | Crear productor | `POST /api/productores` | 201 (409 si se repite el CUIT) | ✅ 201 |
+| 6 | Actualizar productor | `PUT /api/productores/:id` | 200 | ✅ 200 |
+| 7 | Eliminar productor | `DELETE /api/productores/:id` | 200, o 409 si tiene lotes | ✅ 409 (tiene lotes) |
+| 8 | Listar lotes | `GET /api/lotes` | 200 con `nivelAlertaActual` | ✅ 200 |
+| 9 | Filtrar lotes por alerta | `GET /api/lotes?alerta=Crítico` | 200 solo lotes en Crítico | ✅ 200 (1 lote) |
+| 10 | Filtrar lotes por productor | `GET /api/lotes?productorId=...` | 200 | ✅ 200 |
+| 11 | Lote por id | `GET /api/lotes/:id` | 200 | ✅ 200 |
+| 12 | Historial del lote | `GET /api/lotes/:id/observaciones` | 200 ordenado por fecha desc. | ✅ 200 |
+| 13 | Crear lote | `POST /api/lotes` | 201 | ✅ 201 |
+| 14 | Actualizar lote | `PUT /api/lotes/:id` | 200 | ✅ 200 |
+| 15 | Eliminar lote | `DELETE /api/lotes/:id` | 200, o 409 si tiene observaciones | ✅ 409 (tiene obs.) |
+| 16 | Listar observaciones | `GET /api/observaciones` | 200 | ✅ 200 |
+| 17 | Filtrar por alerta | `GET /api/observaciones?alerta=...` | 200 | ✅ 200 |
+| 18 | Filtrar por lote | `GET /api/observaciones?loteId=...` | 200 | ✅ 200 |
+| 19 | Filtrar por técnico | `GET /api/observaciones?tecnicoId=...` | 200 | ✅ 200 |
+| 20 | Observación por id | `GET /api/observaciones/:id` | 200 | ✅ 200 |
+| 21 | Crear observación | `POST /api/observaciones` | 201 | ✅ 201 |
+| 22 | Crear observación sin fecha | `POST /api/observaciones` | **400** (validación) | ✅ 400 |
+| 23 | Actualizar observación | `PUT /api/observaciones/:id` | 200 | ✅ 200 |
+| 24 | Eliminar observación | `DELETE /api/observaciones/:id` | **403** (regla de negocio) | ✅ 403 (RF09) |
+| 25 | Listar técnicos | `GET /api/tecnicos` | 200 | ✅ 200 |
+| 26 | Técnico por id | `GET /api/tecnicos/:id` | 200 | ✅ 200 |
+| 27 | Crear técnico | `POST /api/tecnicos` | 201 | ✅ 201 |
+| 28 | Listar tipos de cultivo | `GET /api/tipos-cultivo` | 200 | ✅ 200 |
+| 29 | Tipo de cultivo por id | `GET /api/tipos-cultivo/:id` | 200 | ✅ 200 |
+| 30 | Crear tipo de cultivo | `POST /api/tipos-cultivo` | 201 (409 si el nombre existe) | ✅ 201 |
+| 31–35 | Vistas del panel (`/`, `/lotes`, `/lotes/:id`, `/observaciones`, `/observaciones/nueva`) | `GET` | Sin sesión: redirige a `/login`. Con sesión: 200 (el formulario solo para admin, si no 403) | ✅ 302 anónimo; 200 admin; 403 lector en `/observaciones/nueva` |
+
+**Pruebas de seguridad — 3ª entrega** (nuevas, con sesión obligatoria en `/api/*`)
+
+| Prueba | Esperado | Obtenido | Evidencia |
+|---|---|---|---|
+| Contraseñas en BD tras `npm run seed` | `password` con prefijo `$2b$` (bcrypt, 60 chars) | ✅ | `E01` |
+| `GET /api/lotes` y `POST /api/productores` sin sesión | 401 JSON `success: false` | ✅ 401 | `E02` |
+| Login admin correcto | 302 → `/`, cookie `agrotec.sid` | ✅ | `E02` |
+| Login con contraseña incorrecta | 302 → `/login?error=1`, sin sesión nueva | ✅ | `E02` |
+| `GET /api/lotes` con sesión de admin | 200 | ✅ | `E02` |
+| Lector: `GET /api/lotes` | 200 (lectura permitida) | ✅ | `E04` |
+| Lector: `POST /api/lotes` | 403 JSON "Tu rol no tiene permisos…" | ✅ | `E04` |
+| Lector: `DELETE /api/observaciones/:id` | 403 por rol (antes que RF09) | ✅ | `E04` |
+| Admin: `DELETE /api/observaciones/:id` | 403 por regla de negocio RF09 | ✅ | `E02` |
+| `POST /logout` y luego `GET /api/lotes` | 302 → `/login`; API vuelve a 401 | ✅ | `E02`/`E04` |
+| Sesión tras reiniciar el server | La misma cookie sigue autenticando (store en Mongo, colección `sessions`) | ✅ 200 tras reinicio | `E06` |
 
 **Pruebas de casos de error adicionales**
 
 | Prueba | Esperado | Obtenido |
 |---|---|---|
-| `GET /api/lotes/123` (id con formato inválido) | 404 | |
-| `GET /api/lotes?productorId=abc` | 400 | |
-| `GET /api/lotes?alerta=Alta` | 400 | |
-| `POST /api/lotes` con `hectareas: 0` | 400 | |
-| `POST /api/lotes` con un `productorId` inexistente | 400 | |
-| `GET /api/ruta-inexistente` | 404 JSON | |
-| Panel: login con contraseña incorrecta | Vuelve a `/login?error=1` | |
-| Panel: usuario `lector` entra a `/observaciones/nueva` | 403 | |
-| Iniciar el servidor con MongoDB apagado | El proceso termina con "No se pudo conectar a MongoDB" | |
+| `GET /api/lotes/123` (id con formato inválido) | 404 | ✅ 404 "Lote no encontrado" |
+| `GET /api/lotes?productorId=abc` | 400 | ✅ 400 |
+| `GET /api/lotes?alerta=Alta` | 400 | ✅ 400 |
+| `POST /api/lotes` con `hectareas: 0` | 400 | ✅ 400 |
+| `POST /api/lotes` con un `productorId` inexistente | 400 | ✅ 400 |
+| `GET /api/ruta-inexistente` | 404 JSON | ✅ 404 `success: false` |
+| Panel: login con contraseña incorrecta | Vuelve a `/login?error=1` | ✅ |
+| Panel: usuario `lector` entra a `/observaciones/nueva` | 403 | ✅ |
+| Iniciar el servidor con MongoDB apagado | El proceso termina con "No se pudo conectar a MongoDB" | ✅ exit 1 (`E07`) |
 
 ## Bibliografía
 
@@ -311,6 +342,9 @@ Las pruebas se realizaron con la extensión **REST Client** de VS Code sobre `re
 - MongoDB — Imagen oficial de Docker: https://hub.docker.com/_/mongo
 - Pug — Documentación: https://pugjs.org/api/getting-started.html
 - express-session: https://github.com/expressjs/session
+- Passport Local: https://www.passportjs.org/packages/passport-local/
+- bcrypt — hash de contraseñas: https://github.com/kelektiv/node.bcrypt.js
+- connect-mongo (store de sesiones en MongoDB): https://github.com/tj/connect-mongo
 - MDN — async/await: https://developer.mozilla.org/es/docs/Learn/JavaScript/Asynchronous/Promises
 - MDN — Códigos de estado HTTP: https://developer.mozilla.org/es/docs/Web/HTTP/Status
 - REST Client (VS Code): https://marketplace.visualstudio.com/items?itemName=humao.rest-client

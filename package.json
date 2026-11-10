@@ -1,7 +1,7 @@
 {
   "name": "agrotec-backend",
-  "version": "2.0.0",
-  "description": "API REST AgroTec — Monitoreo de lotes agrícolas con panel web. Segunda entrega.",
+  "version": "1.0.0",
+  "description": "API REST AgroTec — Monitoreo de lotes agrícolas con panel web. Entrega final.",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
