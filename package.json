@@ -1,7 +1,7 @@
 {
   "name": "agrotec-backend",
-  "version": "1.0.0",
-  "description": "API REST AgroTec — Monitoreo de lotes agricolas. Primera entrega.",
+  "version": "2.0.0",
+  "description": "API REST AgroTec — Monitoreo de lotes agrícolas con panel web. Segunda entrega.",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -18,6 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "connect-mongo": "^6.0.0",
     "dotenv": "^18.0.7",
     "express": "^4.21.2",
     "express-session": "^1.19.0",
