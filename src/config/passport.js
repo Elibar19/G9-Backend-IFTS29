@@ -1,12 +1,10 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
+import bcrypt from 'bcrypt';
 import Usuario from '../models/Usuario.js';
 
-// Comparacion plana de contraseñas por ahora.
-// TODO: cuando agreguemos hashing, cambiar solo esta funcion a bcrypt.compare(plain, stored)
-// y adaptar el seed; el resto del login no se toca.
-function checkPassword(plain, stored) {
-  return plain === stored;
+async function checkPassword(plain, stored) {
+  return bcrypt.compare(plain, stored || '');
 }
 
 passport.use(
@@ -15,7 +13,7 @@ passport.use(
     async (usuario, password, done) => {
       const user = await Usuario.findOne({ usuario }).lean();
 
-      if (!user || !checkPassword(password, user.password)) {
+      if (!user || !(await checkPassword(password, user.password))) {
         return done(null, false, { message: 'Usuario o contraseña incorrectos' });
       }
 
