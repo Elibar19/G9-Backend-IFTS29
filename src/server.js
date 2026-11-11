@@ -1,9 +1,12 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import { port, mongoUri } from './config.js';
+import { port, mongoUri, isProduction } from './config.js';
 
-// Primero se conecta a MongoDB y recién después se importa app.js:
-// el store de sesiones (connect-mongo v6) necesita un client activo para reutilizar esta conexión.
+if (isProduction && !process.env.SESSION_SECRET) {
+  console.error('FATAL: SESSION_SECRET no está definido; es obligatorio con NODE_ENV=production.');
+  process.exit(1);
+}
+
 try {
   await mongoose.connect(mongoUri);
   console.log('Conectado a MongoDB');

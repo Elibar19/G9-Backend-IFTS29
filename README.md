@@ -8,6 +8,7 @@ Tercera entrega — Entrega Final (3° parcial) — Desarrollo Web Backend, IFTS
 - **API REST protegida** (`requireApiAuth`): sin sesión → **401 JSON**; escritura (`POST/PUT/DELETE`) solo rol `admin` → si no, **403 JSON**. Solo `GET /api/health` queda abierta (health-check del deploy). Se cierra la limitación 2 (API sin autenticación).
 - **Sesiones persistentes en MongoDB** (`connect-mongo`): sobreviven reinicios del server — requisito para el deploy posiblemente en Render — y en `NODE_ENV=production` se activan `trust proxy` y cookie `secure`.
 - **Pruebas actualizadas**: `request/agrotec.rest` (49 requests) incluye los casos de seguridad; requiere `rest-client.cookieJar: true` porque `/api/*` exige sesión.
+- **Reforzos de arranque**: con `NODE_ENV=production` el server **no arranca** sin `SESSION_SECRET` (fail-fast, mismo criterio que con MongoDB) y se desactiva el header `X-Powered-By`.
 
 ## Descripción del Caso 4 — AgroTec
 
@@ -103,7 +104,7 @@ El servidor levanta en `http://localhost:3001`. Para verificar que funciona: `GE
 |---|---|---|
 | `PORT` | `3001` | Puerto del servidor |
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017/agrotec` | Cadena de conexión (admite una URI de Atlas `mongodb+srv://...`) |
-| `SESSION_SECRET` | `agrotec-dev-secret` | Secreto de la sesión del panel y de la API |
+| `SESSION_SECRET` | `agrotec-dev-secret` | Secreto de la sesión del panel y de la API. **Obligatorio en producción**: con `NODE_ENV=production` sin esta variable el server no arranca (evita correr con el secreto de desarrollo, que es público) |
 | `NODE_ENV` | `development` | En `production` activa `trust proxy` y cookie `secure` (necesario tras el proxy de Render) |
 
 | Comando | Descripción |
@@ -118,7 +119,7 @@ El servidor levanta en `http://localhost:3001`. Para verificar que funciona: `GE
 
 ## Funcionamiento de la aplicación
 
-1. **Arranque** (`src/server.js`): carga `.env`, se conecta a MongoDB con `mongoose.connect()` y, solo si la conexión es exitosa, levanta Express. Si MongoDB no está disponible, el proceso termina con un mensaje claro.
+1. **Arranque** (`src/server.js`): carga `.env`; en producción exige `SESSION_SECRET` (falla rápido si falta); se conecta a MongoDB con `mongoose.connect()` y, solo si la conexión es exitosa, levanta Express. Si MongoDB no está disponible, el proceso termina con un mensaje claro.
 2. **Configuración de Express** (`src/app.js`): motor de vistas Pug, `express.json()` y `express.urlencoded()` para leer el body, archivos estáticos de `public/`, sesión y Passport, y el montaje de las rutas. Al final se registran los middlewares `notFound` (404) y `errorHandler` (500).
 3. **Rutas** (`src/routes/`): cada recurso tiene su router (`/api/productores`, `/api/lotes`, etc.). Cada handler se envuelve con `asyncHandler`, que captura los errores de las funciones `async` y los pasa a `next()`.
 4. **Controladores** (`src/controllers/`): reciben el request, validan los datos con la función `validate()` del modelo, verifican que existan las referencias (por ejemplo, que el `productorId` de un lote exista) y consultan la base con Mongoose (`find`, `findById`, `create`, `updateOne`, `deleteOne`, `exists`). Responden JSON (API) o renderizan una vista Pug (panel).

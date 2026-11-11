@@ -15,11 +15,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
+app.disable('x-powered-by'); // no revelar la version de Express en los headers
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, '../views'));
 
-// En producción (Render) la app recibe el request detrás de un proxy:
-// sin trust proxy, express-session ve http y descarta la cookie secure.
 if (isProduction) {
   app.set('trust proxy', 1);
 }
@@ -34,8 +33,6 @@ app.use(
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-    // Sesiones en MongoDB: sobreviven reinicios del servicio (requisito de Render).
-    // connect-mongo v6 no acepta mongooseConnection: se reutiliza el client del driver.
     store: MongoStore.create({
       client: mongoose.connection.getClient(),
       dbName: mongoose.connection.name,
