@@ -9,6 +9,11 @@ Tercera entrega — Entrega Final (3° parcial) — Desarrollo Web Backend, IFTS
 - **Sesiones persistentes en MongoDB** (`connect-mongo`): sobreviven reinicios del server — requisito para el deploy posiblemente en Render — y en `NODE_ENV=production` se activan `trust proxy` y cookie `secure`.
 - **Pruebas actualizadas**: `request/agrotec.rest` (49 requests) incluye los casos de seguridad; requiere `rest-client.cookieJar: true` porque `/api/*` exige sesión.
 - **Reforzos de arranque**: con `NODE_ENV=production` el server **no arranca** sin `SESSION_SECRET` (fail-fast, mismo criterio que con MongoDB) y se desactiva el header `X-Powered-By`.
+- **Despliegue en Render + MongoDB Atlas** descrito como código en [`render.yaml`](render.yaml) (ver [Despliegue](#despliegue-render--mongodb-atlas)).
+- **Tests unitarios automatizados** con el runner nativo `node:test`: `npm test` (25 casos, sin base de datos).
+- **Diagramas** (casos de uso, clases, ER, despliegue), exportados a PNG en `docs/img/`.
+
+**Links:** aplicación en línea → `https://<servicio>.onrender.com` _(completar al desplegar)_ · video del coloquio → _(completar)_
 
 ## Descripción del Caso 4 — AgroTec
 
@@ -41,6 +46,8 @@ El proyecto sigue una arquitectura **MVC**, persiste los datos en **MongoDB** me
 | RF09 | Las observaciones no se eliminan: se conservan como historial (DELETE responde 403). |
 | RF10 | Mostrar el nivel de alerta actual de cada lote según su observación más reciente. |
 | RF11 | Panel web con login: cualquier usuario logueado consulta; solo el rol `admin` carga observaciones. |
+| RF12 | API REST autenticada: sin sesión responde 401 JSON; la escritura exige rol `admin` (403 JSON). |
+| RF13 | La sesión del usuario persiste entre reinicios del servidor. |
 
 ### No funcionales
 
@@ -50,8 +57,11 @@ El proyecto sigue una arquitectura **MVC**, persiste los datos en **MongoDB** me
 | RNF02 | Persistencia en MongoDB usando Mongoose; conexión configurable por `MONGODB_URI` (local o Atlas). |
 | RNF03 | Código asincrónico con `async/await`; los errores no controlados llegan al middleware de errores. |
 | RNF04 | Respuestas de la API en JSON con formato uniforme `{ success, data }` / `{ success, message }`. |
-| RNF05 | Códigos HTTP correctos: 200, 201, 400, 403, 404, 409 y 500. |
+| RNF05 | Códigos HTTP correctos: 200, 201, 400, 401, 403, 404, 409 y 500. |
 | RNF06 | Configuración por variables de entorno (`.env`), sin datos sensibles en el código. |
+| RNF07 | Contraseñas almacenadas con hash bcrypt; verificación con `bcrypt.compare`. |
+| RNF08 | Sesiones en store externo (MongoDB) para persistencia y disponibilidad. |
+| RNF09 | En producción: cookie `Secure`, `trust proxy` y `SESSION_SECRET` obligatorio. |
 
 ## Tecnologías
 
@@ -68,6 +78,8 @@ El proyecto sigue una arquitectura **MVC**, persiste los datos en **MongoDB** me
 | dotenv | Variables de entorno |
 | nodemon | Reinicio automático en desarrollo |
 | REST Client (VS Code) | Pruebas de la API (`request/agrotec.rest`) |
+| node:test (nativo) | Tests unitarios automatizados (`npm test`) |
+| Render + MongoDB Atlas | Despliegue en la nube (`render.yaml`) |
 
 ## Requisitos previos
 
@@ -114,8 +126,36 @@ El servidor levanta en `http://localhost:3001`. Para verificar que funciona: `GE
 | `npm run seed` | Borra y vuelve a cargar las colecciones con los datos de `data/*.json` |
 | `npm start` | Levanta el servidor con Node |
 | `npm run dev` | Levanta el servidor con nodemon |
+| `npm test` | Corre los tests unitarios (`test/*.test.js`, runner nativo `node:test`) |
 
 **Usuarios de prueba** (creados por el seed, con contraseña hasheada bcrypt): `admin` / `admin123` (rol admin: lectura y escritura en API + alta de observaciones en el panel) y `lector` / `lector123` (rol usuario: solo lectura).
+
+## Despliegue (Render + MongoDB Atlas)
+
+La configuración del servicio está versionada en [`render.yaml`](render.yaml) (Blueprint de Render).
+
+1. **MongoDB Atlas** — crear un cluster **M0** (gratis), un *Database User* con contraseña propia y en *Network Access* permitir `0.0.0.0/0` (Render free no tiene IP de salida fija; el acceso sigue protegido por usuario/contraseña y TLS). Copiar la URI `mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/agrotec`.
+2. **Cargar los datos en Atlas** desde la máquina local:
+   ```bash
+   MONGODB_URI="mongodb+srv://...atlas.../agrotec" npm run seed
+   ```
+3. **Render** — *New → Blueprint* → elegir este repositorio. Render lee `render.yaml`, crea el Web Service `agrotec-backend` (rama `main`, `npm ci` / `npm start`, health-check en `/api/health`), genera `SESSION_SECRET` y pide el valor de `MONGODB_URI` (pegar la URI de Atlas). Cada push a `main` despliega de nuevo.
+4. **Verificar** en `https://<servicio>.onrender.com`: `/api/health` → 200, `/api/lotes` sin sesión → 401, login con `admin` / `lector`, 403 por rol, y que la sesión sobreviva a *Manual Deploy → Restart service*.
+
+> Plan gratuito: el servicio se suspende tras ~15 min sin tráfico y el primer request tarda ~30–50 s en despertar.
+
+## Tests automatizados
+
+```bash
+npm test
+```
+
+Runner nativo `node:test` (sin dependencias extra ni base de datos):
+
+- `test/validaciones.test.js` — validaciones de los modelos: observación sin fecha / fecha inválida / alerta o estado fuera del enum (RF07–RF08), hectáreas 0 o negativas (valor límite), productor con email inválido, etc.
+- `test/middlewares.test.js` — `requireApiAuth` (401 sin sesión, 403 lector en escritura, admin pasa), `requireLogin`/`requireRole` del panel, `notFound`/`errorHandler` (JSON uniforme y 500 sin filtrar detalles internos), `asyncHandler`, `escapeRegex` y `mapId`.
+
+Resultado: **25 tests, 25 pass**.
 
 ## Funcionamiento de la aplicación
 
@@ -210,6 +250,9 @@ G9-Backend-IFTS29/
 ├── views/                       # Vistas Pug (layout, index, login, error, lotes/, observaciones/)
 ├── docker-compose.yml           # MongoDB 7 en Docker
 ├── .env.example                 # Variables de entorno de ejemplo
+├── render.yaml                  # Blueprint de Render (deploy como código)
+├── docs/                        # Diagramas
+├── test/                        # Tests unitarios (npm test, node:test)
 └── src/
     ├── server.js                # Punto de entrada: conecta MongoDB y levanta Express
     ├── app.js                   # Configuración de Express (middlewares, vistas, rutas)
@@ -219,7 +262,7 @@ G9-Backend-IFTS29/
     ├── middleware/
     │   ├── notFound.js          # 404
     │   ├── errorHandler.js      # 500
-    │   └── requireAuth.js       # requireLogin, requireRole, attachUserView
+    │   └── requireAuth.js       # requireLogin, requireRole (panel), requireApiAuth (API), attachUserView
     ├── models/                  # Schemas Mongoose + validate(): Productor, Lote, Observacion, Tecnico, TipoCultivo, Usuario
     ├── controllers/             # Lógica de cada recurso, vistas y login
     ├── routes/                  # Routers de la API, de las vistas y de autenticación
@@ -357,6 +400,6 @@ Las pruebas se ejecutan con la extensión **REST Client** de VS Code sobre `requ
 - Debug de errores en codigo js
 - Ayuda para definir y mejorar visualmente el frontend con plantillas PUG
 - Redacción de documentación del proyecto
-- Recopilar tests para probar funcionalidad de la API rest
+- Recopilar tests para probar funcionalidad de la API rest y test unitarios
 - Ayuda con la creacion de ObjectId en mongoose
 - Ayuda para crear src/script/seed.js para parsear los datos de los jsons creados en la primera entrega y agregarlos a la nueva db

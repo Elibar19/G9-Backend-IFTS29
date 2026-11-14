@@ -1,13 +1,17 @@
 {
   "name": "agrotec-backend",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "API REST AgroTec — Monitoreo de lotes agrícolas con panel web. Entrega final.",
   "main": "src/server.js",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "agrotec",
