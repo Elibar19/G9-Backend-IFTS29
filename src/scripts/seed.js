@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 import { mongoUri } from '../config.js';
 import Productor, { validate as validateProductor } from '../models/Productor.js';
 import Lote from '../models/Lote.js';
@@ -85,7 +86,7 @@ async function seed() {
   const usuariosDocs = usuarios.map((item) => ({
     _id: remap(item),
     usuario: item.usuario,
-    password: item.password,
+    password: bcrypt.hashSync(item.password, 10),
     role: item.role,
     nombre: item.nombre,
   }));

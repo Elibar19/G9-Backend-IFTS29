@@ -1,10 +1,56 @@
 # Para ejecutar estas requests instalar la extensión "REST Client" de VS Code
 
+# Activar el cookie jar en
+# settings.json de VS Code:  "rest-client.cookieJar": true
+# Antes de correr el archivo: npm run seed, y levantar el server con npm run dev.
+# Ejecutá las requests EN ORDEN: primero los casos anónimos (sin sesión aún),
+# después el login admin, luego el resto.
 
 @host = http://localhost:3001
 
-### Salud del servicio: verifica que la API está en funcionamiento
+
+# ===================================================================
+# SEGURIDAD — casos anónimos (ejecutar ANTES de cualquier login)
+# ===================================================================
+
+### Salud del servicio: sigue ABIERTA para health-check de Render (espera 200)
 GET {{host}}/api/health
+
+### API sin sesión: GET debe responder 401 JSON (success: false)
+GET {{host}}/api/lotes
+
+### API sin sesión: POST también 401 (el middleware corta antes que la validación)
+POST {{host}}/api/productores
+Content-Type: application/json
+
+{
+  "nombre": "Intento anónimo"
+}
+
+
+# ===================================================================
+# SEGURIDAD — login y roles
+# ===================================================================
+
+### Login correcto como admin (espera 302 -> /; la cookie entra al cookie jar)
+POST {{host}}/login
+Content-Type: application/x-www-form-urlencoded
+
+usuario=admin&password=admin123
+
+### Login con contraseña incorrecta (espera 302 -> /login?error=1; no crea sesión)
+POST {{host}}/login
+Content-Type: application/x-www-form-urlencoded
+
+usuario=admin&password=incorrecta
+
+### GET autenticado con la sesión de admin (espera 200)
+GET {{host}}/api/lotes
+
+
+# ===================================================================
+# PRODUCTORES
+# ===================================================================
 
 ### Productores: listar todos
 GET {{host}}/api/productores
@@ -15,14 +61,14 @@ GET {{host}}/api/productores/857bd7d93681780a1dcda895
 ### Productores: lotes del productor
 GET {{host}}/api/productores/857bd7d93681780a1dcda895/lotes
 
-### Productores: crear uno nuevo
+### Productores: crear uno nuevo (admin: espera 201)
 POST {{host}}/api/productores
 Content-Type: application/json
 
 {
   "nombre": "Productor de Prueba",
-  "cuit": "20-12345678-9",
-  "email": "prueba@agrotec.com",
+  "cuit": "20-12345678-6",
+  "email": "prueba3@agrotec.com",
   "telefono": "1122334455",
   "localidad": "Pergamino"
 }
@@ -42,6 +88,11 @@ Content-Type: application/json
 ### Productores: eliminar
 DELETE {{host}}/api/productores/ad504b14f116c40c96d33b72
 
+
+# ===================================================================
+# LOTES
+# ===================================================================
+
 ### Lotes: listar todos
 GET {{host}}/api/lotes
 
@@ -57,7 +108,7 @@ GET {{host}}/api/lotes/e5b274ac98f77b349f0a1f3d
 ### Lotes: historial de observaciones del lote
 GET {{host}}/api/lotes/e5b274ac98f77b349f0a1f3d/observaciones
 
-### Lotes: crear uno nuevo
+### Lotes: crear uno nuevo (admin: espera 201)
 POST {{host}}/api/lotes
 Content-Type: application/json
 
@@ -81,6 +132,11 @@ Content-Type: application/json
 
 ### Lotes: eliminar
 DELETE {{host}}/api/lotes/eada5362fbe4c421d83c75c8
+
+
+# ===================================================================
+# OBSERVACIONES
+# ===================================================================
 
 ### Observaciones: listar todas
 GET {{host}}/api/observaciones
@@ -138,8 +194,13 @@ Content-Type: application/json
   "nivelAlerta": "Atención"
 }
 
-### Observaciones: eliminar (regla de negocio: responde 403, no se borran)
+### Observaciones: eliminar como admin (regla de negocio RF09: 403, no se borran)
 DELETE {{host}}/api/observaciones/df4294b7fd0552f431867dba
+
+
+# ===================================================================
+# TECNICOS Y TIPOS DE CULTIVO
+# ===================================================================
 
 ### Técnicos: listar todos
 GET {{host}}/api/tecnicos
@@ -147,7 +208,7 @@ GET {{host}}/api/tecnicos
 ### Técnicos: obtener uno por id
 GET {{host}}/api/tecnicos/88874107c49eee3dc1f59416
 
-### Técnicos: crear uno nuevo
+### Técnicos: crear uno nuevo (admin: espera 201)
 POST {{host}}/api/tecnicos
 Content-Type: application/json
 
@@ -164,13 +225,61 @@ GET {{host}}/api/tipos-cultivo
 ### Tipos de cultivo: obtener uno por id
 GET {{host}}/api/tipos-cultivo/2a2545d8c5a491a4b0955563
 
-### Tipos de cultivo: crear uno nuevo
+### Tipos de cultivo: crear uno nuevo (admin: espera 201)
 POST {{host}}/api/tipos-cultivo
 Content-Type: application/json
 
 {
   "nombre": "Cebada"
 }
+
+
+# ===================================================================
+# SEGURIDAD — rol lector (ejecutar DESPUÉS de las requests de admin)
+# ===================================================================
+
+### Logout de admin (POST /logout destruye la sesión en Mongo y limpia la cookie)
+POST {{host}}/logout
+
+### API tras logout: vuelve a responder 401 (sesión destruida)
+GET {{host}}/api/lotes
+
+### Login como lector (rol "usuario": solo lectura de API)
+POST {{host}}/login
+Content-Type: application/x-www-form-urlencoded
+
+usuario=lector&password=lector123
+
+### Lector: lectura autenticada (espera 200)
+GET {{host}}/api/lotes
+
+### Lector: escritura bloqueada por rol (espera 403 JSON)
+POST {{host}}/api/lotes
+Content-Type: application/json
+
+{
+  "nombre": "Lote de Lector",
+  "hectareas": 5,
+  "productorId": "857bd7d93681780a1dcda895",
+  "ubicacion":"Sin permiso"
+}
+
+### Lector: eliminar observación (espera 403 por ROL, antes de la regla RF09)
+DELETE {{host}}/api/observaciones/df4294b7fd0552f431867dba
+
+### Logout final (deja la API como estaba: anónima)
+POST {{host}}/logout
+
+
+# ===================================================================
+# VISTAS DEL PANEL (requieren sesión: ejecutar tras un login)
+# ===================================================================
+
+### Login para navegar el panel (espera 302 -> /)
+POST {{host}}/login
+Content-Type: application/x-www-form-urlencoded
+
+usuario=admin&password=admin123
 
 ### Vista: inicio (panel web)
 GET {{host}}/
