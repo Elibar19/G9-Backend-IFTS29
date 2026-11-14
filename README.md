@@ -8,12 +8,13 @@ Tercera entrega — Entrega Final (3° parcial) — Desarrollo Web Backend, IFTS
 - **API REST protegida** (`requireApiAuth`): sin sesión → **401 JSON**; escritura (`POST/PUT/DELETE`) solo rol `admin` → si no, **403 JSON**. Solo `GET /api/health` queda abierta (health-check del deploy). Se cierra la limitación 2 (API sin autenticación).
 - **Sesiones persistentes en MongoDB** (`connect-mongo`): sobreviven reinicios del server — requisito para el deploy posiblemente en Render — y en `NODE_ENV=production` se activan `trust proxy` y cookie `secure`.
 - **Pruebas actualizadas**: `request/agrotec.rest` (49 requests) incluye los casos de seguridad; requiere `rest-client.cookieJar: true` porque `/api/*` exige sesión.
-- **Reforzos de arranque**: con `NODE_ENV=production` el server **no arranca** sin `SESSION_SECRET` (fail-fast, mismo criterio que con MongoDB) y se desactiva el header `X-Powered-By`.
+- **Endurecimiento de arranque**: con `NODE_ENV=production` el server **no arranca** sin `SESSION_SECRET` (fail-fast, mismo criterio que con MongoDB) y se desactiva el header `X-Powered-By`.
 - **Despliegue en Render + MongoDB Atlas** descrito como código en [`render.yaml`](render.yaml) (ver [Despliegue](#despliegue-render--mongodb-atlas)).
 - **Tests unitarios automatizados** con el runner nativo `node:test`: `npm test` (25 casos, sin base de datos).
 - **Diagramas** (casos de uso, clases, ER, despliegue), exportados a PNG en `docs/img/`.
+- **Versiones** Se agregó una carpeta versions donde se incluyen las versiones de cada etapa y un archivo .zip con los subdirectorios, uno por cada version, comprimidos
 
-**Links:** aplicación en línea → `https://<servicio>.onrender.com` _(completar al desplegar)_ · video del coloquio → _(completar)_
+**Links:** aplicación en línea → `https://agrotec-backend-f52e.onrender.com/`
 
 ## Descripción del Caso 4 — AgroTec
 
