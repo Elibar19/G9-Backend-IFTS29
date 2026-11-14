@@ -1,0 +1,23 @@
+[
+  {
+    "id": "tec-001",
+    "nombre": "Ana López",
+    "especialidad": "Fitopatología",
+    "email": "ana.lopez@agrotec.com",
+    "telefono": "351-5550101"
+  },
+  {
+    "id": "tec-002",
+    "nombre": "Carlos Pérez",
+    "especialidad": "Suelos y nutrición",
+    "email": "carlos.perez@agrotec.com",
+    "telefono": "351-5550102"
+  },
+  {
+    "id": "tec-003",
+    "nombre": "María González",
+    "especialidad": "Manejo de plagas",
+    "email": "maria.gonzalez@agrotec.com",
+    "telefono": "351-5550103"
+  }
+]

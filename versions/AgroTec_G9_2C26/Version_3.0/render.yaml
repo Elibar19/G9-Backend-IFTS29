@@ -1,0 +1,18 @@
+# Blueprint de Render: define el Web Service de AgroTec como código.
+# Render → New → Blueprint → seleccionar este repositorio.
+services:
+  - type: web
+    name: agrotec-backend
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health   # única ruta /api pública (no requiere sesión)
+    envVars:
+      - key: NODE_ENV
+        value: production          # activa trust proxy + cookie Secure
+      - key: MONGODB_URI
+        sync: false                # se carga a mano en el panel: URI mongodb+srv:// de Atlas
+      - key: SESSION_SECRET
+        generateValue: true        # Render genera un secreto aleatorio (obligatorio en producción)

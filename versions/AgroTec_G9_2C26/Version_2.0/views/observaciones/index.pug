@@ -1,0 +1,29 @@
+extends ../layout
+
+block contenido
+  .encabezado
+    h1 Observaciones
+    a.btn(href="/observaciones/nueva") Nueva observación
+
+  table
+    thead
+      tr
+        th Fecha
+        th Lote
+        th Técnico
+        th Cultivo
+        th Estado
+        th Alerta
+        th Detalle
+    tbody
+      each observacion in observaciones
+        tr
+          td= observacion.fecha
+          td
+            a(href=`/lotes/${observacion.loteId}`)= observacion.loteNombre
+          td= observacion.tecnicoNombre
+          td= observacion.cultivoNombre
+          td= observacion.estadoCultivo
+          td
+            span(class=`badge badge-${observacion.nivelAlerta}`)= observacion.nivelAlerta
+          td= observacion.observaciones

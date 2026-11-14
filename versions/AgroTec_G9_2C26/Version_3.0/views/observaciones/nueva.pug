@@ -1,0 +1,41 @@
+extends ../layout
+
+block contenido
+  h1 Nueva observación
+
+  form.formulario(action="/observaciones" method="POST")
+    label Lote
+      select(name="loteId" required)
+        option(value="") Seleccionar lote
+        each lote in lotes
+          option(value=lote.id)= lote.nombre
+
+    label Técnico
+      select(name="tecnicoId" required)
+        option(value="") Seleccionar técnico
+        each tecnico in tecnicos
+          option(value=tecnico.id)= tecnico.nombre
+
+    label Fecha
+      input(type="date" name="fecha" required)
+
+    label Tipo de cultivo
+      select(name="tipoCultivoId" required)
+        option(value="") Seleccionar cultivo
+        each tipoCultivo in tiposCultivo
+          option(value=tipoCultivo.id)= tipoCultivo.nombre
+
+    label Estado del cultivo
+      select(name="estadoCultivo" required)
+        each estado in estadosCultivo
+          option(value=estado)= estado
+
+    label Nivel de alerta
+      select(name="nivelAlerta" required)
+        each nivel in nivelesAlerta
+          option(value=nivel)= nivel
+
+    label Observaciones
+      textarea(name="observaciones" rows="4" required)
+
+    button.btn(type="submit") Guardar observación

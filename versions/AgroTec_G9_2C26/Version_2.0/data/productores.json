@@ -1,0 +1,26 @@
+[
+  {
+    "id": "prod-001",
+    "nombre": "Estancia El Progreso S.A.",
+    "cuit": "30-71234567-8",
+    "email": "contacto@elprogreso.com",
+    "telefono": "358-4123456",
+    "localidad": "Río Cuarto, Córdoba"
+  },
+  {
+    "id": "prod-002",
+    "nombre": "Cooperativa Agrícola del Sur",
+    "cuit": "30-69876543-2",
+    "email": "admin@coopsur.com",
+    "telefono": "3462-456789",
+    "localidad": "Venado Tuerto, Santa Fe"
+  },
+  {
+    "id": "prod-003",
+    "nombre": "Familia Martínez",
+    "cuit": "20-28456789-1",
+    "email": "martinez.campo@gmail.com",
+    "telefono": "2477-334455",
+    "localidad": "Pergamino, Buenos Aires"
+  }
+]
