@@ -11,9 +11,9 @@ Tercera entrega — Entrega Final (3° parcial) — Desarrollo Web Backend, IFTS
 - **Reforzos de arranque**: con `NODE_ENV=production` el server **no arranca** sin `SESSION_SECRET` (fail-fast, mismo criterio que con MongoDB) y se desactiva el header `X-Powered-By`.
 - **Despliegue en Render + MongoDB Atlas** descrito como código en [`render.yaml`](render.yaml) (ver [Despliegue](#despliegue-render--mongodb-atlas)).
 - **Tests unitarios automatizados** con el runner nativo `node:test`: `npm test` (25 casos, sin base de datos).
-- **Diagramas** (casos de uso, clases, ER, secuencia, despliegue y planificación) en [`docs/diagramas.md`](docs/diagramas.md), exportados a PNG en `docs/img/`.
+- **Diagramas** (casos de uso, clases, ER, secuencia y despliegue) en [`docs/`](docs/), exportados a PNG en `docs/img/`.
 
-**Links:** aplicación en línea → `https://<servicio>.onrender.com` _(completar al desplegar)_ · video del coloquio → _(completar)_
+**Links:** aplicación en línea → `https://agrotec-backend-f52e.onrender.com/`
 
 ## Descripción del Caso 4 — AgroTec
 
@@ -80,7 +80,6 @@ El proyecto sigue una arquitectura **MVC**, persiste los datos en **MongoDB** me
 | REST Client (VS Code) | Pruebas de la API (`request/agrotec.rest`) |
 | node:test (nativo) | Tests unitarios automatizados (`npm test`) |
 | Render + MongoDB Atlas | Despliegue en la nube (`render.yaml`) |
-| Mermaid | Diagramas versionados en `docs/diagramas.md` |
 
 ## Requisitos previos
 
@@ -252,7 +251,7 @@ G9-Backend-IFTS29/
 ├── docker-compose.yml           # MongoDB 7 en Docker
 ├── .env.example                 # Variables de entorno de ejemplo
 ├── render.yaml                  # Blueprint de Render (deploy como código)
-├── docs/                        # Diagramas (Mermaid + PNG) y secciones de la documentación
+├── docs/                        # Diagramas (PNG)
 ├── test/                        # Tests unitarios (npm test, node:test)
 └── src/
     ├── server.js                # Punto de entrada: conecta MongoDB y levanta Express
